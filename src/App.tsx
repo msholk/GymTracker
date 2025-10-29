@@ -3,7 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import useAuth from './hooks/useAuth';
 import Auth from './components/Auth';
 import Header from './components/Header';
-import Notes from './components/Notes';
+import Routines from './components/Routines';
 
 const App: React.FC = () => {
   const { user, loading } = useAuth();
@@ -22,7 +22,7 @@ const App: React.FC = () => {
         {user ? (
           <>
             <Header />
-            <Notes />
+            <Routines />
           </>
         ) : (
           <Auth />
