@@ -86,19 +86,49 @@ const Routines: React.FC = () => {
         }));
     };
 
+
+    // Store temporary edit state for title
+    const [editTitle, setEditTitle] = useState<string>('');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null); // for showing edit buttons
+
+    const startEditing = (routine: Routine) => {
+        setEditingId(routine.id);
+        setEditTitle(routine.title);
+    };
+
+    const selectRoutine = (routine: Routine) => {
+        setSelectedId(routine.id);
+    };
+
     const updateRoutineTitle = async (id: string, title: string) => {
         setRoutines(routines => routines.map(r => r.id === id ? { ...r, title } : r));
         await updateDoc(doc(db, 'routines', id), { title });
     };
 
-    const finishEditing = (id: string) => {
-        setRoutines(routines => routines.map(r => r.id === id ? { ...r, isEditing: false } : r));
+    const finishEditing = async (id: string) => {
+        await updateRoutineTitle(id, editTitle);
+        setEditingId(null);
+        setEditTitle('');
+        setSelectedId(null);
     };
+
+    const cancelEditing = (routine: Routine) => {
+        setEditingId(null);
+        setEditTitle('');
+        setSelectedId(routine.id); // Stay in details mode for this routine
+    };
+
+
+
 
     const deleteRoutine = async (id: string) => {
         await deleteDoc(doc(db, 'routines', id));
         setRoutines(routines => routines.filter(r => r.id !== id));
         setConfirmDeleteId(null);
+        setEditingId(null);
+        setEditTitle('');
+        setSelectedId(null);
     };
 
     return (
@@ -130,9 +160,6 @@ const Routines: React.FC = () => {
                     <span style={{ fontSize: 32, lineHeight: 1, marginTop: -2 }}>+</span>
                 </button>
             </div>
-            {loading ? <p style={{ color: '#888', marginBottom: 24, textAlign: 'center' }}>Loading routines...</p> : null}
-            {!loading && routines.length === 0 && <p style={{ color: '#666', marginBottom: 24, textAlign: 'center' }}>You have no routines yet.</p>}
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {routines.map(routine => (
                     <div
@@ -143,26 +170,27 @@ const Routines: React.FC = () => {
                             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                             padding: 20,
                             position: 'relative',
-                            cursor: !routine.isEditing ? 'pointer' : undefined,
+                            cursor: editingId === routine.id ? undefined : 'pointer',
                             transition: 'box-shadow 0.2s',
                         }}
-                        onClick={!routine.isEditing ? () => setRoutines(rs => rs.map(r => r.id === routine.id ? { ...r, isEditing: true } : { ...r, isEditing: false })) : undefined}
+                        onClick={editingId === routine.id ? undefined : () => selectRoutine(routine)}
                         onMouseOver={e => {
-                            if (!routine.isEditing) e.currentTarget.style.boxShadow = '0 4px 16px rgba(79,138,139,0.13)';
+                            if (editingId !== routine.id) e.currentTarget.style.boxShadow = '0 4px 16px rgba(79,138,139,0.13)';
                         }}
                         onMouseOut={e => {
-                            if (!routine.isEditing) e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                            if (editingId !== routine.id) e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
                         }}
                     >
-                        {routine.isEditing ? (
+                        {editingId === routine.id ? (
                             <>
                                 <input
                                     type="text"
-                                    value={routine.title}
-                                    onChange={e => updateRoutineTitle(routine.id, e.target.value)}
+                                    value={editTitle}
+                                    onChange={e => setEditTitle(e.target.value)}
                                     placeholder="Routine title"
                                     style={{ fontSize: 18, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%', marginBottom: 12, boxSizing: 'border-box' }}
                                     autoFocus
+                                    onClick={e => e.stopPropagation()}
                                 />
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                                     <span style={{ color: '#888', fontSize: 14 }}>Created: {routine.createdAt.toLocaleString()}</span>
@@ -175,6 +203,10 @@ const Routines: React.FC = () => {
                                             style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
                                             onClick={e => { e.stopPropagation(); setConfirmDeleteId(routine.id); }}
                                         >Delete</button>
+                                        <button
+                                            style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                                            onClick={e => { e.stopPropagation(); cancelEditing(routine); }}
+                                        >Cancel</button>
                                     </div>
                                 </div>
                                 {/* Exercises Section */}
@@ -234,8 +266,94 @@ const Routines: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                <div style={{ fontSize: 20, fontWeight: 600, color: '#333', marginBottom: 8 }}>{routine.title}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                                    {selectedId === routine.id && editingId !== routine.id && (
+                                        <button
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                marginRight: 10,
+                                                cursor: 'pointer',
+                                                fontSize: 22,
+                                                color: '#888',
+                                                padding: 2,
+                                                borderRadius: 6,
+                                                transition: 'background 0.2s',
+                                            }}
+                                            aria-label="Back to List"
+                                            onClick={e => { e.stopPropagation(); setSelectedId(null); }}
+                                            onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
+                                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                                        >
+                                            &#8592;
+                                        </button>
+                                    )}
+                                    <span style={{ fontSize: 20, fontWeight: 600, color: '#333' }}>{routine.title}</span>
+                                    {selectedId === routine.id && (
+                                        <button
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                marginLeft: 8,
+                                                cursor: 'pointer',
+                                                fontSize: 22,
+                                                color: '#888',
+                                                padding: 2,
+                                                borderRadius: 6,
+                                                transition: 'background 0.2s',
+                                            }}
+                                            aria-label="Edit Routine Title"
+                                            onClick={e => { e.stopPropagation(); startEditing(routine); }}
+                                            onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
+                                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                                        >
+                                            &#8942;
+                                        </button>
+                                    )}
+                                </div>
                                 <div style={{ color: '#888', fontSize: 14 }}>Created: {routine.createdAt.toLocaleString()}</div>
+                                {/* Exercises list only in details mode */}
+                                {selectedId === routine.id && editingId !== routine.id && (
+                                    <div style={{ marginTop: 16 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                            <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Exercises:</span>
+                                            <button
+                                                onClick={() => addExercise(routine.id)}
+                                                style={{
+                                                    background: '#4F8A8B',
+                                                    color: '#fff',
+                                                    border: 'none',
+                                                    borderRadius: '50%',
+                                                    width: 28,
+                                                    height: 28,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: 18,
+                                                    fontWeight: 700,
+                                                    boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+                                                    cursor: 'pointer',
+                                                    transition: 'background 0.2s',
+                                                }}
+                                                aria-label="Add Exercise"
+                                                onMouseOver={e => (e.currentTarget.style.background = '#357376')}
+                                                onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            {(routine.exercises && routine.exercises.length > 0) ? (
+                                                routine.exercises.map(ex => (
+                                                    <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333' }}>{ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}</div>
+                                                ))
+                                            ) : (
+                                                <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* No edit hint in details mode */}
                             </>
                         )}
                     </div>
