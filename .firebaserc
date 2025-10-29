@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "gymtracker-9f77d"
-  }
+    "default": "gymtracker-9f77d",
+    "goodname": "gymtracker25"
+  },
+  "targets": {},
+  "etags": {}
 }
