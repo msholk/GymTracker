@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/config';
-import { collection, addDoc, getDocs, updateDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
 
 
@@ -14,6 +14,7 @@ interface Routine {
 
 const Routines: React.FC = () => {
     const [routines, setRoutines] = useState<Routine[]>([]);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
 
@@ -70,6 +71,12 @@ const Routines: React.FC = () => {
         setRoutines(routines => routines.map(r => r.id === id ? { ...r, isEditing: false } : r));
     };
 
+    const deleteRoutine = async (id: string) => {
+        await deleteDoc(doc(db, 'routines', id));
+        setRoutines(routines => routines.filter(r => r.id !== id));
+        setConfirmDeleteId(null);
+    };
+
     return (
         <div style={{ margin: '32px auto', maxWidth: 500, background: '#f4f6f8', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', padding: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -118,12 +125,47 @@ const Routines: React.FC = () => {
                                     style={{ fontSize: 18, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%', marginBottom: 12, boxSizing: 'border-box' }}
                                     autoFocus
                                 />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                                     <span style={{ color: '#888', fontSize: 14 }}>Created: {routine.createdAt.toLocaleString()}</span>
-                                    <button
-                                        style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                                        onClick={e => { e.stopPropagation(); finishEditing(routine.id); }}
-                                    >Save</button>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <button
+                                            style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                                            onClick={e => { e.stopPropagation(); finishEditing(routine.id); }}
+                                        >Save</button>
+                                        <button
+                                            style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(routine.id); }}
+                                        >Delete</button>
+            {confirmDeleteId && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{ background: '#fff', borderRadius: 16, padding: 32, minWidth: 320, boxShadow: '0 4px 24px rgba(0,0,0,0.18)', textAlign: 'center' }}>
+                        <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 18, color: '#d32f2f' }}>Delete Routine?</div>
+                        <div style={{ color: '#555', marginBottom: 28 }}>Are you sure you want to delete this routine? This action cannot be undone.</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
+                            <button
+                                style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
+                                onClick={() => deleteRoutine(confirmDeleteId)}
+                            >Delete</button>
+                            <button
+                                style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
+                                onClick={() => setConfirmDeleteId(null)}
+                            >Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+                                    </div>
                                 </div>
                             </>
                         ) : (
