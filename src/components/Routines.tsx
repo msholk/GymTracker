@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ExerciseCatalog from './ExerciseCatalog';
+import { CatalogExercise } from '../data/exerciseCatalog';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
@@ -19,6 +21,23 @@ interface Routine {
 }
 
 const Routines: React.FC = () => {
+    // UI state for editing
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+
+    // Routine selection and editing
+    const selectRoutine = (routine: Routine) => {
+        setSelectedId(routine.id);
+    };
+    const startEditing = (routine: Routine) => {
+        setEditingId(routine.id);
+        setEditTitle(routine.title);
+    };
+    const updateRoutineTitle = async (id: string, title: string) => {
+        await updateDoc(doc(db, 'routines', id), { title });
+        setRoutines(routines => routines.map(r => r.id === id ? { ...r, title } : r));
+    };
     const [routines, setRoutines] = useState<Routine[]>([]);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const { user } = useAuth();
@@ -70,40 +89,31 @@ const Routines: React.FC = () => {
             ...routines
         ]);
     };
-    const addExercise = async (routineId: string) => {
+
+    // Catalog modal state
+    const [catalogRoutineId, setCatalogRoutineId] = useState<string | null>(null);
+
+    // Show catalog modal for this routine
+    const showCatalog = (routineId: string) => {
+        setCatalogRoutineId(routineId);
+    };
+
+    // Add selected exercise from catalog
+    const addExerciseFromCatalog = async (routineId: string, ex: CatalogExercise) => {
+        const newExercise: Exercise = {
+            id: Math.random().toString(36).substr(2, 9),
+            title: ex.name
+        };
+        // Optionally add more fields (icon, type, sets, reps, duration) to Exercise type if needed
         setRoutines(routines => routines.map(r => {
             if (r.id === routineId) {
-                const newExercise: Exercise = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    title: ''
-                };
                 const updatedExercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
-                // Optionally update Firestore here if you want exercises to persist
                 updateDoc(doc(db, 'routines', routineId), { exercises: updatedExercises });
                 return { ...r, exercises: updatedExercises };
             }
             return r;
         }));
-    };
-
-
-    // Store temporary edit state for title
-    const [editTitle, setEditTitle] = useState<string>('');
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [selectedId, setSelectedId] = useState<string | null>(null); // for showing edit buttons
-
-    const startEditing = (routine: Routine) => {
-        setEditingId(routine.id);
-        setEditTitle(routine.title);
-    };
-
-    const selectRoutine = (routine: Routine) => {
-        setSelectedId(routine.id);
-    };
-
-    const updateRoutineTitle = async (id: string, title: string) => {
-        setRoutines(routines => routines.map(r => r.id === id ? { ...r, title } : r));
-        await updateDoc(doc(db, 'routines', id), { title });
+        setCatalogRoutineId(null);
     };
 
     const finishEditing = async (id: string) => {
@@ -214,7 +224,7 @@ const Routines: React.FC = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                                         <span style={{ fontWeight: 600, fontSize: 17, color: '#4F8A8B' }}>Exercises</span>
                                         <button
-                                            onClick={() => addExercise(routine.id)}
+                                            onClick={() => showCatalog(routine.id)}
                                             style={{
                                                 background: '#4F8A8B',
                                                 color: '#fff',
@@ -318,7 +328,7 @@ const Routines: React.FC = () => {
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                                             <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Exercises:</span>
                                             <button
-                                                onClick={() => addExercise(routine.id)}
+                                                onClick={() => showCatalog(routine.id)}
                                                 style={{
                                                     background: '#4F8A8B',
                                                     color: '#fff',
@@ -351,6 +361,13 @@ const Routines: React.FC = () => {
                                                 <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
                                             )}
                                         </div>
+                                        {/* Exercise Catalog Modal */}
+                                        {catalogRoutineId && (
+                                            <ExerciseCatalog
+                                                onSelect={ex => addExerciseFromCatalog(catalogRoutineId, ex)}
+                                                onClose={() => setCatalogRoutineId(null)}
+                                            />
+                                        )}
                                     </div>
                                 )}
                                 {/* No edit hint in details mode */}
