@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import NewExerciseEditor from './NewExerciseEditor';
-import { CatalogExercise } from '../data/exerciseCatalog';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
@@ -91,30 +90,7 @@ const Routines: React.FC = () => {
         ]);
     };
 
-    // Catalog modal state
-    const [catalogRoutineId, setCatalogRoutineId] = useState<string | null>(null);
 
-    // Show catalog modal for this routine
-    const showCatalog = (routineId: string) => {
-        setCatalogRoutineId(routineId);
-    };
-
-    // Add selected exercise from catalog
-    const addExerciseFromCatalog = async (routineId: string, ex: CatalogExercise) => {
-        const newExercise: Exercise = {
-            id: Math.random().toString(36).substr(2, 9),
-            title: ex.name
-        };
-        setRoutines(routines => routines.map(r => {
-            if (r.id === routineId) {
-                const updatedExercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
-                updateDoc(doc(db, 'routines', routineId), { exercises: updatedExercises });
-                return { ...r, exercises: updatedExercises };
-            }
-            return r;
-        }));
-        setCatalogRoutineId(null);
-    };
 
     // Add new exercise from NewExerciseEditor
     const addExerciseFromEditor = async (routineId: string, ex: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight' }) => {
@@ -131,7 +107,6 @@ const Routines: React.FC = () => {
             }
             return r;
         }));
-        setCatalogRoutineId(null);
     };
 
     const finishEditing = async (id: string) => {
@@ -239,32 +214,8 @@ const Routines: React.FC = () => {
                                 </div>
                                 {/* Exercises Section */}
                                 <div style={{ marginTop: 24 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
                                         <span style={{ fontWeight: 600, fontSize: 17, color: '#4F8A8B' }}>Exercises</span>
-                                        <button
-                                            onClick={() => showCatalog(routine.id)}
-                                            style={{
-                                                background: '#4F8A8B',
-                                                color: '#fff',
-                                                border: 'none',
-                                                borderRadius: '50%',
-                                                width: 32,
-                                                height: 32,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontSize: 22,
-                                                fontWeight: 700,
-                                                boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
-                                                cursor: 'pointer',
-                                                transition: 'background 0.2s',
-                                            }}
-                                            aria-label="Add Exercise"
-                                            onMouseOver={e => (e.currentTarget.style.background = '#357376')}
-                                            onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
-                                        >
-                                            +
-                                        </button>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                         {(routine.exercises || []).map(ex => (
@@ -343,32 +294,8 @@ const Routines: React.FC = () => {
                                 {/* Exercises list only in details mode */}
                                 {selectedId === routine.id && editingId !== routine.id && (
                                     <div style={{ marginTop: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                                             <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Exercises:</span>
-                                            <button
-                                                onClick={() => showCatalog(routine.id)}
-                                                style={{
-                                                    background: '#4F8A8B',
-                                                    color: '#fff',
-                                                    border: 'none',
-                                                    borderRadius: '50%',
-                                                    width: 28,
-                                                    height: 28,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: 18,
-                                                    fontWeight: 700,
-                                                    boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
-                                                    cursor: 'pointer',
-                                                    transition: 'background 0.2s',
-                                                }}
-                                                aria-label="Add Exercise"
-                                                onMouseOver={e => (e.currentTarget.style.background = '#357376')}
-                                                onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
-                                            >
-                                                +
-                                            </button>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                             {(routine.exercises && routine.exercises.length > 0) ? (
@@ -386,13 +313,6 @@ const Routines: React.FC = () => {
                                                 <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
                                             )}
                                         </div>
-                                        {/* Exercise Catalog Modal */}
-                                        {catalogRoutineId && (
-                                            <NewExerciseEditor
-                                                onSelect={ex => addExerciseFromEditor(catalogRoutineId, ex)}
-                                                onClose={() => setCatalogRoutineId(null)}
-                                            />
-                                        )}
                                     </div>
                                 )}
                                 {/* No edit hint in details mode */}
