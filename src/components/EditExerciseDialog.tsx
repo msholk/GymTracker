@@ -196,24 +196,35 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                             type="button"
                             style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, cursor: 'pointer' }}
                             onClick={() => {
-                                let defaultValue = 1;
-                                let type: 'time' | 'weight' = 'weight';
-                                if (measurement === 'Time') {
-                                    defaultValue = 0;
-                                    type = 'time';
-                                } else if (measurement === 'Weight' || measurement === 'Body Weight') {
-                                    defaultValue = 10;
-                                    type = 'weight';
-                                }
-                                setSets([
-                                    ...sets,
-                                    {
-                                        id: Math.random().toString(36).substr(2, 9),
-                                        value: defaultValue,
-                                        type,
-                                        reps: hasReps ? 10 : undefined
+                                if (sets.length > 0) {
+                                    const last = sets[sets.length - 1];
+                                    setSets([
+                                        ...sets,
+                                        {
+                                            ...last,
+                                            id: Math.random().toString(36).substr(2, 9)
+                                        }
+                                    ]);
+                                } else {
+                                    let defaultValue = 1;
+                                    let type: 'time' | 'weight' = 'weight';
+                                    if (measurement === 'Time') {
+                                        defaultValue = 0;
+                                        type = 'time';
+                                    } else if (measurement === 'Weight' || measurement === 'Body Weight') {
+                                        defaultValue = 10;
+                                        type = 'weight';
                                     }
-                                ]);
+                                    setSets([
+                                        ...sets,
+                                        {
+                                            id: Math.random().toString(36).substr(2, 9),
+                                            value: defaultValue,
+                                            type,
+                                            reps: hasReps ? 10 : undefined
+                                        }
+                                    ]);
+                                }
                             }}
                             aria-label="Add Set"
                         >
