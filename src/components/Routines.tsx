@@ -114,6 +114,7 @@ const Routines: React.FC = () => {
     const [exercisePlayDialog, setExercisePlayDialog] = useState<{
         routineId: string;
         exerciseIdx: number;
+        exerciseId: string;
     } | null>(null);
 
     const [routines, setRoutines] = useState<Routine[]>([]);
@@ -489,7 +490,7 @@ const Routines: React.FC = () => {
                                                                     setTimeout(() => {
                                                                         console.log('Play clicked');
                                                                         // Placeholder for Play action
-                                                                        setExercisePlayDialog({ routineId: routine.id, exerciseIdx: idx });
+                                                                        setExercisePlayDialog({ routineId: routine.id, exerciseIdx: idx, exerciseId: ex.id });
                                                                     }, 0);
                                                                 }}
                                                                 onEdit={() => {
@@ -567,28 +568,12 @@ const Routines: React.FC = () => {
                 })()}
                 onSave={updated => {
                     if (!exercisePlayDialog) return;
-                    setRoutines(routines => routines.map(r => {
-                        if (r.id !== exercisePlayDialog.routineId) return r;
-                        const exercises = r.exercises ? [...r.exercises] : [];
-                        exercises[exercisePlayDialog.exerciseIdx] = { ...exercises[exercisePlayDialog.exerciseIdx], ...updated };
-                        debugger;
-                        updateDoc(doc(db, 'routines', r.id), { exercises });
-                        return { ...r, exercises };
-                    }));
-                    setExerciseDialog(null);
+
+                    debugger
+                    setExercisePlayDialog(null);
                 }}
-                onDelete={() => {
-                    if (!exercisePlayDialog) return;
-                    setRoutines(routines => routines.map(r => {
-                        if (r.id !== exercisePlayDialog.routineId) return r;
-                        const exercises = (r.exercises || []).filter((_, i) => i !== exercisePlayDialog.exerciseIdx);
-                        debugger;
-                        updateDoc(doc(db, 'routines', r.id), { exercises });
-                        return { ...r, exercises };
-                    }));
-                    setExerciseDialog(null);
-                }}
-                onClose={() => setExerciseDialog(null)}
+
+                onClose={() => setExercisePlayDialog(null)}
             />
         </div>
     );

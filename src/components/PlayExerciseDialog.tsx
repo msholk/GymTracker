@@ -1,4 +1,6 @@
+
 import React, { useState } from 'react';
+import { saveExerciseHistory } from '../data/exerciseHistory';
 
 
 type SetItem = {
@@ -6,7 +8,6 @@ type SetItem = {
     value: number;
     type?: 'time' | 'weight';
     reps?: number;
-    completed?: boolean;
 };
 
 type MeasurementUnit = 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
@@ -161,14 +162,24 @@ const PlayExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
     }
     const [title, setTitle] = useState(exercise?.title || '');
     const [measurement, setMeasurement] = useState<"Time" | "Weight" | "Body Weight" | undefined>(exercise?.measurement);
-    const [sets, setSets] = useState<SetItem[]>(exercise?.sets || []);
+    // Remove 'completed' property from sets when initializing
+    const cleanSets = (exercise?.sets || []).map(s => {
+        const { completed, ...rest } = s as any;
+        return rest;
+    });
+    const [sets, setSets] = useState<SetItem[]>(cleanSets);
     const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>(exercise?.measurementUnit || 'None');
     const hasReps = exercise?.hasRepetitions ?? true;
 
     React.useEffect(() => {
         setTitle(exercise?.title || '');
         setMeasurement(exercise?.measurement);
-        setSets(exercise?.sets || []);
+        // Remove 'completed' property from sets when updating
+        const cleanSets = (exercise?.sets || []).map(s => {
+            const { completed, ...rest } = s as any;
+            return rest;
+        });
+        setSets(cleanSets);
         setMeasurementUnit(exercise?.measurementUnit || 'None');
     }, [exercise]);
 
@@ -195,8 +206,19 @@ const PlayExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
 
                     <button
                         style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                        onClick={() => {
+                        onClick={async () => {
                             const sanitizedSets = sets.map(set => ({ ...set, reps: set.reps === undefined ? 0 : set.reps }));
+                            // Try to get uid from localStorage (if using Firebase Auth, adjust as needed)
+
+                            const historyData = {
+                                exerciseId: exercise.id,
+                                title,
+                                measurement,
+                                measurementUnit,
+                                sets: sanitizedSets,
+                                timestamp: Date.now(),
+                            };
+                            await saveExerciseHistory(historyData, exercise);
                             onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
                         }}
                         disabled={!title.trim()}
