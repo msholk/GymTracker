@@ -68,6 +68,7 @@ function formatSetsShort(sets: any[], ex: any) {
     }
 }
 import EditExerciseDialog from './EditExerciseDialog';
+import PlayExerciseDialog from './PlayExerciseDialog';
 import NewExerciseEditor from './NewExerciseEditor';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
@@ -107,6 +108,10 @@ const Routines: React.FC = () => {
     // Routine selection and editing
     // Exercise edit dialog state
     const [exerciseDialog, setExerciseDialog] = useState<{
+        routineId: string;
+        exerciseIdx: number;
+    } | null>(null);
+    const [exercisePlayDialog, setExercisePlayDialog] = useState<{
         routineId: string;
         exerciseIdx: number;
     } | null>(null);
@@ -484,7 +489,7 @@ const Routines: React.FC = () => {
                                                                     setTimeout(() => {
                                                                         console.log('Play clicked');
                                                                         // Placeholder for Play action
-                                                                        alert('Play: ' + (ex.title || 'Untitled Exercise'));
+                                                                        setExercisePlayDialog({ routineId: routine.id, exerciseIdx: idx });
                                                                     }, 0);
                                                                 }}
                                                                 onEdit={() => {
@@ -544,6 +549,39 @@ const Routines: React.FC = () => {
                     setRoutines(routines => routines.map(r => {
                         if (r.id !== exerciseDialog.routineId) return r;
                         const exercises = (r.exercises || []).filter((_, i) => i !== exerciseDialog.exerciseIdx);
+                        debugger;
+                        updateDoc(doc(db, 'routines', r.id), { exercises });
+                        return { ...r, exercises };
+                    }));
+                    setExerciseDialog(null);
+                }}
+                onClose={() => setExerciseDialog(null)}
+            />
+            <PlayExerciseDialog
+                open={!!exercisePlayDialog}
+                exercise={(() => {
+                    if (!exercisePlayDialog) return null;
+                    const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
+                    if (!routine) return null;
+                    return routine.exercises?.[exercisePlayDialog.exerciseIdx] || null;
+                })()}
+                onSave={updated => {
+                    if (!exercisePlayDialog) return;
+                    setRoutines(routines => routines.map(r => {
+                        if (r.id !== exercisePlayDialog.routineId) return r;
+                        const exercises = r.exercises ? [...r.exercises] : [];
+                        exercises[exercisePlayDialog.exerciseIdx] = { ...exercises[exercisePlayDialog.exerciseIdx], ...updated };
+                        debugger;
+                        updateDoc(doc(db, 'routines', r.id), { exercises });
+                        return { ...r, exercises };
+                    }));
+                    setExerciseDialog(null);
+                }}
+                onDelete={() => {
+                    if (!exercisePlayDialog) return;
+                    setRoutines(routines => routines.map(r => {
+                        if (r.id !== exercisePlayDialog.routineId) return r;
+                        const exercises = (r.exercises || []).filter((_, i) => i !== exercisePlayDialog.exerciseIdx);
                         debugger;
                         updateDoc(doc(db, 'routines', r.id), { exercises });
                         return { ...r, exercises };
