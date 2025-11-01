@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ExerciseCatalog from './ExerciseCatalog';
+import NewExerciseEditor from './NewExerciseEditor';
 import { CatalogExercise } from '../data/exerciseCatalog';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
@@ -9,6 +9,7 @@ import useAuth from '../hooks/useAuth';
 interface Exercise {
     id: string;
     title: string;
+    measurement?: 'Time' | 'Weight' | 'Body Weight';
 }
 
 interface Routine {
@@ -104,7 +105,24 @@ const Routines: React.FC = () => {
             id: Math.random().toString(36).substr(2, 9),
             title: ex.name
         };
-        // Optionally add more fields (icon, type, sets, reps, duration) to Exercise type if needed
+        setRoutines(routines => routines.map(r => {
+            if (r.id === routineId) {
+                const updatedExercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
+                updateDoc(doc(db, 'routines', routineId), { exercises: updatedExercises });
+                return { ...r, exercises: updatedExercises };
+            }
+            return r;
+        }));
+        setCatalogRoutineId(null);
+    };
+
+    // Add new exercise from NewExerciseEditor
+    const addExerciseFromEditor = async (routineId: string, ex: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight' }) => {
+        const newExercise: Exercise = {
+            id: Math.random().toString(36).substr(2, 9),
+            title: ex.name,
+            measurement: ex.measurement
+        };
         setRoutines(routines => routines.map(r => {
             if (r.id === routineId) {
                 const updatedExercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
@@ -355,7 +373,14 @@ const Routines: React.FC = () => {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                             {(routine.exercises && routine.exercises.length > 0) ? (
                                                 routine.exercises.map(ex => (
-                                                    <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333' }}>{ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}</div>
+                                                    <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333' }}>
+                                                        {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
+                                                        {ex.measurement && (
+                                                            <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
+                                                                ({ex.measurement})
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 ))
                                             ) : (
                                                 <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
@@ -363,8 +388,8 @@ const Routines: React.FC = () => {
                                         </div>
                                         {/* Exercise Catalog Modal */}
                                         {catalogRoutineId && (
-                                            <ExerciseCatalog
-                                                onSelect={ex => addExerciseFromCatalog(catalogRoutineId, ex)}
+                                            <NewExerciseEditor
+                                                onSelect={ex => addExerciseFromEditor(catalogRoutineId, ex)}
                                                 onClose={() => setCatalogRoutineId(null)}
                                             />
                                         )}
