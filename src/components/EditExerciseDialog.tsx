@@ -162,6 +162,18 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                     autoFocus
                 />
                 <div style={{ marginBottom: 8 }}>
+                    <select
+                        value={measurement || ''}
+                        onChange={e => setMeasurement(e.target.value as 'Time' | 'Weight' | 'Body Weight')}
+                        style={{ fontSize: 15, padding: '7px 10px', borderRadius: 8, border: '1px solid #ccc', width: '100%' }}
+                    >
+                        <option value="">Select measurement</option>
+                        <option value="Time">Time</option>
+                        <option value="Weight">Weight</option>
+                        <option value="Body Weight">Body Weight</option>
+                    </select>
+                </div>
+                <div style={{ marginBottom: 8 }}>
                     <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Measurement Unit</label>
                     <select
                         value={measurementUnit}
@@ -175,16 +187,6 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                         <option value="Hole">Hole</option>
                     </select>
                 </div>
-                <select
-                    value={measurement || ''}
-                    onChange={e => setMeasurement(e.target.value as 'Time' | 'Weight' | 'Body Weight')}
-                    style={{ fontSize: 15, padding: '7px 10px', borderRadius: 8, border: '1px solid #ccc', width: '100%' }}
-                >
-                    <option value="">Select measurement</option>
-                    <option value="Time">Time</option>
-                    <option value="Weight">Weight</option>
-                    <option value="Body Weight">Body Weight</option>
-                </select>
 
                 {/* Sets List */}
                 <div style={{ marginTop: 10, marginBottom: 10 }}>
@@ -230,7 +232,10 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                     >Delete</button>
                     <button
                         style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                        onClick={() => onSave({ id: exercise.id, title, measurement, sets, measurementUnit })}
+                        onClick={() => {
+                            const sanitizedSets = sets.map(set => ({ ...set, reps: set.reps === undefined ? 0 : set.reps }));
+                            onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
+                        }}
                         disabled={!title.trim()}
                     >Save</button>
                     <button
