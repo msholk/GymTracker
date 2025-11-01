@@ -1,5 +1,43 @@
 // ...existing code...
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+// Simple menu component for exercise actions
+// (Keep outside, but use only inside Routines)
+const ExerciseMenu = (
+    { anchorRef, open, onClose, onPlay, onEdit }:
+        {
+            anchorRef: React.RefObject<HTMLButtonElement>,
+            open: boolean,
+            onClose: () => void,
+            onPlay: () => void,
+            onEdit: () => void
+        }) => {
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (anchorRef.current && !anchorRef.current.contains(event.target as Node)) {
+                onClose();
+            }
+        }
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [open, anchorRef, onClose]);
+    if (!open) return null;
+    return (
+        <div style={{ position: 'absolute', right: 0, top: 32, background: '#fff', border: '1px solid #ddd', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.13)', zIndex: 10, minWidth: 100 }}>
+            <button
+                style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
+                onClick={onPlay}
+            >Play</button>
+            <button
+                style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
+                onClick={onEdit}
+            >Edit</button>
+        </div>
+    );
+};
 // Helper to format sets description
 function formatSetsShort(sets: any[], ex: any) {
     if (!sets || sets.length === 0) return '';
@@ -60,6 +98,8 @@ interface Routine {
 
 const Routines: React.FC = () => {
     // UI state for editing
+    // State for which exercise menu is open: { routineId, exerciseIdx } | null
+    const [exerciseMenu, setExerciseMenu] = useState<{ routineId: string, exerciseIdx: number } | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -369,61 +409,95 @@ const Routines: React.FC = () => {
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                             {(routine.exercises && routine.exercises.length > 0) ? (
-                                                routine.exercises.map((ex, idx) => (
-                                                    <div
-                                                        key={ex.id}
-                                                        style={{ display: 'flex', alignItems: 'center', background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333', cursor: 'grab' }}
-                                                        draggable
-                                                        onDragStart={e => {
-                                                            e.dataTransfer.setData('text/plain', idx.toString());
-                                                        }}
-                                                        onDragOver={e => e.preventDefault()}
-                                                        onDrop={e => {
-                                                            e.preventDefault();
-                                                            const fromIdx = Number(e.dataTransfer.getData('text/plain'));
-                                                            if (fromIdx === idx) return;
-                                                            const updatedExercises = [...(routine.exercises || [])];
-                                                            const [moved] = updatedExercises.splice(fromIdx, 1);
-                                                            updatedExercises.splice(idx, 0, moved);
-                                                            setRoutines(routines => routines.map(r =>
-                                                                r.id === routine.id ? { ...r, exercises: updatedExercises } : r
-                                                            ));
-                                                            debugger;
-                                                            updateDoc(doc(db, 'routines', routine.id), { exercises: updatedExercises });
-                                                        }}
-                                                    >
-                                                        <span style={{ flex: 1 }}>
-                                                            {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
-                                                            {ex.sets && ex.sets.length > 0 && (
-                                                                <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
-                                                                    {formatSetsShort(ex.sets, ex)}
-                                                                </span>
-                                                            )}
-                                                        </span>
-                                                        <button
-                                                            style={{
-                                                                background: 'none',
-                                                                border: 'none',
-                                                                cursor: 'pointer',
-                                                                fontSize: 20,
-                                                                color: '#888',
-                                                                padding: 2,
-                                                                borderRadius: 6,
-                                                                marginLeft: 8,
-                                                                transition: 'background 0.2s',
+                                                routine.exercises.map((ex, idx) => {
+                                                    // Use a callback ref to avoid useRef in a loop
+                                                    const menuAnchorRefs = (Routines as any)._menuAnchorRefs = (Routines as any)._menuAnchorRefs || {};
+                                                    const refKey = `${routine.id}-${idx}`;
+                                                    if (!menuAnchorRefs[refKey]) menuAnchorRefs[refKey] = React.createRef();
+                                                    const menuAnchorRef = menuAnchorRefs[refKey];
+                                                    const isMenuOpen = !!(exerciseMenu && exerciseMenu.routineId === routine.id && exerciseMenu.exerciseIdx === idx);
+                                                    return (
+                                                        <div
+                                                            key={ex.id}
+                                                            style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333', cursor: 'grab' }}
+                                                            draggable
+                                                            onDragStart={e => {
+                                                                e.dataTransfer.setData('text/plain', idx.toString());
                                                             }}
-                                                            aria-label="Edit Exercise"
-                                                            onClick={e => {
-                                                                e.stopPropagation();
-                                                                setExerciseDialog({ routineId: routine.id, exerciseIdx: idx });
+                                                            onDragOver={e => e.preventDefault()}
+                                                            onDrop={e => {
+                                                                e.preventDefault();
+                                                                const fromIdx = Number(e.dataTransfer.getData('text/plain'));
+                                                                if (fromIdx === idx) return;
+                                                                const updatedExercises = [...(routine.exercises || [])];
+                                                                const [moved] = updatedExercises.splice(fromIdx, 1);
+                                                                updatedExercises.splice(idx, 0, moved);
+                                                                setRoutines(routines => routines.map(r =>
+                                                                    r.id === routine.id ? { ...r, exercises: updatedExercises } : r
+                                                                ));
+                                                                debugger;
+                                                                updateDoc(doc(db, 'routines', routine.id), { exercises: updatedExercises });
                                                             }}
-                                                            onMouseOver={e => (e.currentTarget.style.background = '#e0e0e0')}
-                                                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
                                                         >
-                                                            &#8942;
-                                                        </button>
-                                                    </div>
-                                                ))
+                                                            <span style={{ flex: 1 }}>
+                                                                {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
+                                                                {ex.sets && ex.sets.length > 0 && (
+                                                                    <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
+                                                                        {formatSetsShort(ex.sets, ex)}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <button
+                                                                ref={menuAnchorRef}
+                                                                style={{
+                                                                    background: 'none',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    fontSize: 20,
+                                                                    color: '#888',
+                                                                    padding: 2,
+                                                                    borderRadius: 6,
+                                                                    marginLeft: 8,
+                                                                    transition: 'background 0.2s',
+                                                                }}
+                                                                aria-label="Exercise Menu"
+                                                                onClick={e => {
+                                                                    e.stopPropagation();
+                                                                    setExerciseMenu({ routineId: routine.id, exerciseIdx: idx });
+                                                                }}
+                                                                onMouseOver={e => (e.currentTarget.style.background = '#e0e0e0')}
+                                                                onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                                                            >
+                                                                &#8942;
+                                                            </button>
+                                                            <ExerciseMenu
+                                                                anchorRef={menuAnchorRef}
+                                                                open={isMenuOpen}
+                                                                onClose={() => {
+                                                                    setTimeout(() => {
+                                                                        setExerciseMenu(null)
+                                                                    }, 100);
+                                                                }}
+                                                                // onClose={() => { }}
+                                                                onPlay={() => {
+                                                                    //setExerciseMenu(null);
+                                                                    setTimeout(() => {
+                                                                        console.log('Play clicked');
+                                                                        // Placeholder for Play action
+                                                                        alert('Play: ' + (ex.title || 'Untitled Exercise'));
+                                                                    }, 0);
+                                                                }}
+                                                                onEdit={() => {
+                                                                    // setExerciseMenu(null);
+                                                                    setTimeout(() => {
+                                                                        console.log('Edit clicked');
+                                                                        setExerciseDialog({ routineId: routine.id, exerciseIdx: idx });
+                                                                    }, 0);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })
                                             ) : (
                                                 <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
                                             )}
