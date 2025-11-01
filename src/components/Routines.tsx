@@ -73,6 +73,9 @@ import NewExerciseEditor from './NewExerciseEditor';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
+import { getExerciseHistory, ExerciseHistoryRecord } from '../data/exerciseHistory';
+
+
 
 
 interface SetItem {
@@ -98,6 +101,13 @@ interface Routine {
 }
 
 const Routines: React.FC = () => {
+    const { user } = useAuth();
+    // State for exercise history
+    const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistoryRecord[]>([]);
+    useEffect(() => {
+        if (!user) return;
+        getExerciseHistory(user.uid).then(setExerciseHistory);
+    }, [user]);
     // UI state for editing
     // State for which exercise menu is open: { routineId, exerciseIdx } | null
     const [exerciseMenu, setExerciseMenu] = useState<{ routineId: string, exerciseIdx: number } | null>(null);
@@ -119,7 +129,6 @@ const Routines: React.FC = () => {
 
     const [routines, setRoutines] = useState<Routine[]>([]);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     // Add state for showing NewExerciseEditor modal
     const [showAddExerciseFor, setShowAddExerciseFor] = useState<string | null>(null);
@@ -288,7 +297,6 @@ const Routines: React.FC = () => {
                                     onClick={e => e.stopPropagation()}
                                 />
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                                    <span style={{ color: '#888', fontSize: 14 }}>Created: {routine.createdAt.toLocaleString()}</span>
                                     <div style={{ display: 'flex', gap: 8 }}>
                                         <button
                                             style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
@@ -382,7 +390,6 @@ const Routines: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                <div style={{ color: '#888', fontSize: 14 }}>Created: {routine.createdAt.toLocaleString()}</div>
                                 {/* Exercises list only in details mode */}
                                 {selectedId === routine.id && editingId !== routine.id && (
                                     <div style={{ marginTop: 16 }}>
@@ -422,6 +429,12 @@ const Routines: React.FC = () => {
                                                     if (!menuAnchorRefs[refKey]) menuAnchorRefs[refKey] = React.createRef();
                                                     const menuAnchorRef = menuAnchorRefs[refKey];
                                                     const isMenuOpen = !!(exerciseMenu && exerciseMenu.routineId === routine.id && exerciseMenu.exerciseIdx === idx);
+                                                    // Find latest history for this exercise
+                                                    const historyItems = exerciseHistory.filter(h => h.exerciseId === ex.id);
+                                                    let latestHistory: ExerciseHistoryRecord | null = null;
+                                                    if (historyItems.length > 0) {
+                                                        latestHistory = historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+                                                    }
                                                     return (
                                                         <div
                                                             key={ex.id}
@@ -451,6 +464,19 @@ const Routines: React.FC = () => {
                                                                     <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
                                                                         {formatSetsShort(ex.sets, ex)}
                                                                     </span>
+                                                                )}
+                                                                {/* Show latest history if available */}
+                                                                {latestHistory && (
+                                                                    <div>
+                                                                        <span style={{ color: '#4F8A8B', fontSize: 13, marginLeft: 12, fontStyle: 'italic' }}>
+                                                                            Last: {formatSetsShort(latestHistory.sets, ex)}
+                                                                            {latestHistory.timestamp && (
+                                                                                <span style={{ color: '#888', marginLeft: 6 }}>
+                                                                                    ({new Date(latestHistory.timestamp).toLocaleDateString()})
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                    </div>
                                                                 )}
                                                             </span>
                                                             <button
@@ -568,11 +594,9 @@ const Routines: React.FC = () => {
                 })()}
                 onSave={updated => {
                     if (!exercisePlayDialog) return;
-
-                    debugger
                     setExercisePlayDialog(null);
                 }}
-
+                onDelete={() => { }}
                 onClose={() => setExercisePlayDialog(null)}
             />
         </div>
