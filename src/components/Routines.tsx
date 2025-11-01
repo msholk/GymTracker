@@ -1,4 +1,9 @@
+function startEditing(routine: Routine) {
+    setEditingId(routine.id);
+    setEditTitle(routine.title);
+}
 import React, { useState, useEffect } from 'react';
+import EditExerciseDialog from './EditExerciseDialog';
 import NewExerciseEditor from './NewExerciseEditor';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
@@ -27,21 +32,27 @@ const Routines: React.FC = () => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
     // Routine selection and editing
-    const selectRoutine = (routine: Routine) => {
-        setSelectedId(routine.id);
-    };
-    const startEditing = (routine: Routine) => {
-        setEditingId(routine.id);
-        setEditTitle(routine.title);
-    };
-    const updateRoutineTitle = async (id: string, title: string) => {
-        await updateDoc(doc(db, 'routines', id), { title });
-        setRoutines(routines => routines.map(r => r.id === id ? { ...r, title } : r));
-    };
+    // Exercise edit dialog state
+    const [exerciseDialog, setExerciseDialog] = useState<{
+        routineId: string;
+        exerciseIdx: number;
+    } | null>(null);
+
     const [routines, setRoutines] = useState<Routine[]>([]);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
+    // Add state for showing NewExerciseEditor modal
+    const [showAddExerciseFor, setShowAddExerciseFor] = useState<string | null>(null);
+
+    const selectRoutine = (routine: Routine) => {
+        setSelectedId(routine.id);
+    };
+
+    const updateRoutineTitle = async (id: string, title: string) => {
+        await updateDoc(doc(db, 'routines', id), { title });
+        setRoutines(routines => routines.map(r => r.id === id ? { ...r, title } : r));
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -294,8 +305,32 @@ const Routines: React.FC = () => {
                                 {/* Exercises list only in details mode */}
                                 {selectedId === routine.id && editingId !== routine.id && (
                                     <div style={{ marginTop: 16 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6, justifyContent: 'space-between' }}>
                                             <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Exercises:</span>
+                                            <button
+                                                style={{
+                                                    background: '#4F8A8B',
+                                                    color: '#fff',
+                                                    border: 'none',
+                                                    borderRadius: '50%',
+                                                    width: 32,
+                                                    height: 32,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: 22,
+                                                    fontWeight: 700,
+                                                    boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+                                                    cursor: 'pointer',
+                                                    transition: 'background 0.2s',
+                                                }}
+                                                aria-label="Add Exercise"
+                                                onClick={e => { e.stopPropagation(); setShowAddExerciseFor(routine.id); }}
+                                                onMouseOver={e => (e.currentTarget.style.background = '#357376')}
+                                                onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
+                                            >
+                                                <span style={{ fontSize: 24, lineHeight: 1, marginTop: -2 }}>+</span>
+                                            </button>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                             {(routine.exercises && routine.exercises.length > 0) ? (
@@ -339,8 +374,7 @@ const Routines: React.FC = () => {
                                                             aria-label="Edit Exercise"
                                                             onClick={e => {
                                                                 e.stopPropagation();
-                                                                // TODO: Open exercise edit dialog/modal here
-                                                                alert('Open edit dialog for ' + (ex.title || 'Untitled Exercise'));
+                                                                setExerciseDialog({ routineId: routine.id, exerciseIdx: idx });
                                                             }}
                                                             onMouseOver={e => (e.currentTarget.style.background = '#e0e0e0')}
                                                             onMouseOut={e => (e.currentTarget.style.background = 'none')}
@@ -353,7 +387,15 @@ const Routines: React.FC = () => {
                                                 <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
                                             )}
                                         </div>
+                                        {/* Modal for NewExerciseEditor */}
+                                        {showAddExerciseFor === routine.id && (
+                                            <NewExerciseEditor
+                                                onSelect={ex => { addExerciseFromEditor(routine.id, ex); setShowAddExerciseFor(null); }}
+                                                onClose={() => setShowAddExerciseFor(null)}
+                                            />
+                                        )}
                                     </div>
+                                    // Add state for showing NewExerciseEditor modal
                                 )}
                                 {/* No edit hint in details mode */}
                             </>
@@ -361,8 +403,39 @@ const Routines: React.FC = () => {
                     </div>
                 ))}
             </div>
+            {/* Exercise Edit Dialog/Modal */}
+            <EditExerciseDialog
+                open={!!exerciseDialog}
+                exercise={(() => {
+                    if (!exerciseDialog) return null;
+                    const routine = routines.find(r => r.id === exerciseDialog.routineId);
+                    if (!routine) return null;
+                    return routine.exercises?.[exerciseDialog.exerciseIdx] || null;
+                })()}
+                onSave={updated => {
+                    if (!exerciseDialog) return;
+                    setRoutines(routines => routines.map(r => {
+                        if (r.id !== exerciseDialog.routineId) return r;
+                        const exercises = r.exercises ? [...r.exercises] : [];
+                        exercises[exerciseDialog.exerciseIdx] = { ...exercises[exerciseDialog.exerciseIdx], ...updated };
+                        updateDoc(doc(db, 'routines', r.id), { exercises });
+                        return { ...r, exercises };
+                    }));
+                    setExerciseDialog(null);
+                }}
+                onDelete={() => {
+                    if (!exerciseDialog) return;
+                    setRoutines(routines => routines.map(r => {
+                        if (r.id !== exerciseDialog.routineId) return r;
+                        const exercises = (r.exercises || []).filter((_, i) => i !== exerciseDialog.exerciseIdx);
+                        updateDoc(doc(db, 'routines', r.id), { exercises });
+                        return { ...r, exercises };
+                    }));
+                    setExerciseDialog(null);
+                }}
+                onClose={() => setExerciseDialog(null)}
+            />
         </div>
     );
 }
-
 export default Routines;
