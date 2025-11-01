@@ -299,14 +299,54 @@ const Routines: React.FC = () => {
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                             {(routine.exercises && routine.exercises.length > 0) ? (
-                                                routine.exercises.map(ex => (
-                                                    <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333' }}>
-                                                        {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
-                                                        {ex.measurement && (
-                                                            <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
-                                                                ({ex.measurement})
-                                                            </span>
-                                                        )}
+                                                routine.exercises.map((ex, idx) => (
+                                                    <div
+                                                        key={ex.id}
+                                                        style={{ display: 'flex', alignItems: 'center', background: '#f4f6f8', borderRadius: 8, padding: '6px 12px', fontSize: 15, color: '#333', cursor: 'grab' }}
+                                                        draggable
+                                                        onDragStart={e => {
+                                                            e.dataTransfer.setData('text/plain', idx.toString());
+                                                        }}
+                                                        onDragOver={e => e.preventDefault()}
+                                                        onDrop={e => {
+                                                            e.preventDefault();
+                                                            const fromIdx = Number(e.dataTransfer.getData('text/plain'));
+                                                            if (fromIdx === idx) return;
+                                                            const updatedExercises = [...(routine.exercises || [])];
+                                                            const [moved] = updatedExercises.splice(fromIdx, 1);
+                                                            updatedExercises.splice(idx, 0, moved);
+                                                            setRoutines(routines => routines.map(r =>
+                                                                r.id === routine.id ? { ...r, exercises: updatedExercises } : r
+                                                            ));
+                                                            updateDoc(doc(db, 'routines', routine.id), { exercises: updatedExercises });
+                                                        }}
+                                                    >
+                                                        <span style={{ flex: 1 }}>
+                                                            {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
+                                                        </span>
+                                                        <button
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                cursor: 'pointer',
+                                                                fontSize: 20,
+                                                                color: '#888',
+                                                                padding: 2,
+                                                                borderRadius: 6,
+                                                                marginLeft: 8,
+                                                                transition: 'background 0.2s',
+                                                            }}
+                                                            aria-label="Edit Exercise"
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                // TODO: Open exercise edit dialog/modal here
+                                                                alert('Open edit dialog for ' + (ex.title || 'Untitled Exercise'));
+                                                            }}
+                                                            onMouseOver={e => (e.currentTarget.style.background = '#e0e0e0')}
+                                                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                                                        >
+                                                            &#8942;
+                                                        </button>
                                                     </div>
                                                 ))
                                             ) : (
