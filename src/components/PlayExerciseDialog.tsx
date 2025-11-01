@@ -6,6 +6,7 @@ type SetItem = {
     value: number;
     type?: 'time' | 'weight';
     reps?: number;
+    completed?: boolean;
 };
 
 type MeasurementUnit = 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
@@ -39,6 +40,16 @@ const PlayExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                 label: string;
             },) {
             const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
+            if (set.completed) {
+                // Render as label if completed
+                return (
+                    <>
+                        <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
+                        <span style={{ color: '#333', fontSize: 15, marginRight: 8 }}>{set.value}</span>
+                        {hasReps && <><span style={{ color: '#888', fontSize: 14 }}>reps:</span> <span style={{ color: '#333', fontSize: 15 }}>{set.reps}</span></>}
+                    </>
+                );
+            }
             let firstInput = null;
             if (measurement === 'Time' || measurement === 'Weight') {
                 let lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
@@ -104,11 +115,26 @@ const PlayExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
 
                     <button
                         type="button"
-                        style={{ background: '#eee', color: '#d32f2f', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
-                        onClick={() => setSets(sets => sets.filter((_, i) => i !== idx))}
-                        aria-label="Remove Set"
+                        style={{
+                            background: set.completed ? '#e0f2f1' : '#ffe082', // yellow for uncompleted
+                            color: set.completed ? '#388e3c' : '#e65100', // deep orange for uncompleted
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: 22,
+                            height: 22,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 14,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: set.completed ? '0 0 0 2px #b2dfdb' : '0 0 0 2px #ffe082'
+                        }}
+                        onClick={() => setSets(sets => sets.map((s, i) => i === idx ? { ...s, completed: !s.completed } : s))}
+                        aria-label={set.completed ? 'Unmark as Completed' : 'Mark as Completed'}
+                        title={set.completed ? 'Unmark as Completed' : 'Mark as Completed'}
                     >
-                        &minus;
+                        {set.completed ? '✓' : '○'}
                     </button>
                 </div>
             );
