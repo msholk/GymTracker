@@ -1,27 +1,31 @@
 import React, { useState } from 'react';
 
 interface NewExerciseEditorProps {
-    onSelect: (exercise: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight'; hasRepetitions: boolean }) => void;
+    onSelect: (exercise: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight'; hasRepetitions: boolean; measurementUnit: MeasurementUnit }) => void;
     onClose: () => void;
 }
 
-const measurementTypes = ['Time', 'Weight', 'Body Weight'] as const;
 
+const measurementTypes = ['Time', 'Weight', 'Body Weight'] as const;
+const measurementUnits = ['None', 'Kg', 'Lb', 'Plate', 'Hole'] as const;
 type MeasurementType = typeof measurementTypes[number];
+type MeasurementUnit = typeof measurementUnits[number];
 
 
 const NewExerciseEditor: React.FC<NewExerciseEditorProps> = ({ onSelect, onClose }) => {
     const [name, setName] = useState('');
     const [measurement, setMeasurement] = useState<MeasurementType>('Time');
     const [hasRepetitions, setHasRepetitions] = useState<boolean>(true);
+    const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>('None');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) return;
-        onSelect({ name: name.trim(), measurement, hasRepetitions });
+        onSelect({ name: name.trim(), measurement, hasRepetitions, measurementUnit });
         setName('');
         setMeasurement('Time');
         setHasRepetitions(true);
+        setMeasurementUnit('None');
     };
 
     return (
@@ -66,6 +70,18 @@ const NewExerciseEditor: React.FC<NewExerciseEditorProps> = ({ onSelect, onClose
                                 No
                             </label>
                         </div>
+                    </div>
+                    <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Measurement Unit</label>
+                        <select
+                            value={measurementUnit}
+                            onChange={e => setMeasurementUnit(e.target.value as MeasurementUnit)}
+                            style={{ fontSize: 16, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%' }}
+                        >
+                            {measurementUnits.map(unit => (
+                                <option key={unit} value={unit}>{unit}</option>
+                            ))}
+                        </select>
                     </div>
                     <div style={{ marginBottom: 24 }}>
                         <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Measurement Type</label>

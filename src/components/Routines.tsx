@@ -7,11 +7,16 @@ import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp
 import useAuth from '../hooks/useAuth';
 
 
+interface SetItem {
+    id: string;
+    value: number;
+}
 interface Exercise {
     id: string;
     title: string;
     measurement?: 'Time' | 'Weight' | 'Body Weight';
     hasRepetitions?: boolean;
+    sets?: SetItem[];
 }
 
 interface Routine {
