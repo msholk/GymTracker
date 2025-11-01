@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface NewExerciseEditorProps {
-    onSelect: (exercise: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight' }) => void;
+    onSelect: (exercise: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight'; hasRepetitions: boolean }) => void;
     onClose: () => void;
 }
 
@@ -9,16 +9,19 @@ const measurementTypes = ['Time', 'Weight', 'Body Weight'] as const;
 
 type MeasurementType = typeof measurementTypes[number];
 
+
 const NewExerciseEditor: React.FC<NewExerciseEditorProps> = ({ onSelect, onClose }) => {
     const [name, setName] = useState('');
     const [measurement, setMeasurement] = useState<MeasurementType>('Time');
+    const [hasRepetitions, setHasRepetitions] = useState<boolean>(true);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) return;
-        onSelect({ name: name.trim(), measurement });
+        onSelect({ name: name.trim(), measurement, hasRepetitions });
         setName('');
         setMeasurement('Time');
+        setHasRepetitions(true);
     };
 
     return (
@@ -36,6 +39,33 @@ const NewExerciseEditor: React.FC<NewExerciseEditorProps> = ({ onSelect, onClose
                             style={{ fontSize: 16, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%', boxSizing: 'border-box', marginRight: 0, marginLeft: 0 }}
                             autoFocus
                         />
+                    </div>
+                    <div style={{ marginBottom: 18 }}>
+                        <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Has Repetitions?</label>
+                        <div style={{ display: 'flex', gap: 16 }}>
+                            <label style={{ fontWeight: 500 }}>
+                                <input
+                                    type="radio"
+                                    name="hasRepetitions"
+                                    value="yes"
+                                    checked={hasRepetitions === true}
+                                    onChange={() => setHasRepetitions(true)}
+                                    style={{ marginRight: 6 }}
+                                />
+                                Yes
+                            </label>
+                            <label style={{ fontWeight: 500 }}>
+                                <input
+                                    type="radio"
+                                    name="hasRepetitions"
+                                    value="no"
+                                    checked={hasRepetitions === false}
+                                    onChange={() => setHasRepetitions(false)}
+                                    style={{ marginRight: 6 }}
+                                />
+                                No
+                            </label>
+                        </div>
                     </div>
                     <div style={{ marginBottom: 24 }}>
                         <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Measurement Type</label>

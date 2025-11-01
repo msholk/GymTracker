@@ -1,7 +1,4 @@
-function startEditing(routine: Routine) {
-    setEditingId(routine.id);
-    setEditTitle(routine.title);
-}
+// ...existing code...
 import React, { useState, useEffect } from 'react';
 import EditExerciseDialog from './EditExerciseDialog';
 import NewExerciseEditor from './NewExerciseEditor';
@@ -14,6 +11,7 @@ interface Exercise {
     id: string;
     title: string;
     measurement?: 'Time' | 'Weight' | 'Body Weight';
+    hasRepetitions?: boolean;
 }
 
 interface Routine {
@@ -104,11 +102,12 @@ const Routines: React.FC = () => {
 
 
     // Add new exercise from NewExerciseEditor
-    const addExerciseFromEditor = async (routineId: string, ex: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight' }) => {
+    const addExerciseFromEditor = async (routineId: string, ex: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight'; hasRepetitions: boolean }) => {
         const newExercise: Exercise = {
             id: Math.random().toString(36).substr(2, 9),
             title: ex.name,
-            measurement: ex.measurement
+            measurement: ex.measurement,
+            hasRepetitions: ex.hasRepetitions
         };
         setRoutines(routines => routines.map(r => {
             if (r.id === routineId) {
@@ -293,7 +292,7 @@ const Routines: React.FC = () => {
                                                 transition: 'background 0.2s',
                                             }}
                                             aria-label="Edit Routine Title"
-                                            onClick={e => { e.stopPropagation(); startEditing(routine); }}
+                                            onClick={e => { e.stopPropagation(); setEditingId(routine.id); setEditTitle(routine.title); }}
                                             onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
                                             onMouseOut={e => (e.currentTarget.style.background = 'none')}
                                         >
