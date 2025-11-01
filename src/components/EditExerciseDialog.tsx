@@ -26,6 +26,113 @@ interface EditExerciseDialogProps {
 
 
 const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise, onSave, onDelete, onClose }) => {
+    function renderSetInputs(sets: SetItem[], measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
+        if (sets.length === 0) {
+            return <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>;
+        }
+        function getInputs({ set, idx, measurement, measurementUnit, label }:
+            {
+                set: SetItem;
+                idx: number;
+                measurement: string | undefined;
+                measurementUnit: MeasurementUnit;
+                label: string;
+            },) {
+            const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
+            let firstInput = null;
+            if (measurement === 'Time' || measurement === 'Weight') {
+                let lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
+                let step = 0.5
+                if (measurement === 'Time') {
+                    lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>secs</span>
+                    step = 1
+                }
+                else if (label.includes('Plate') || label.includes('Hole')) {
+                    step = 1
+                }
+                firstInput = (
+                    <>
+                        {lblCtrl}
+                        <input
+                            type="number"
+                            value={set.value}
+                            min={0}
+                            step={step}
+                            onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, value: val } : s));
+                            }}
+                            style={style}
+                        />
+                    </>
+                );
+            }
+
+            let repsInput = null;
+            if (hasReps) {
+                repsInput = (
+                    <>
+                        <span style={{ color: '#888', fontSize: 14 }}>reps:</span>
+                        <input
+                            type="number"
+                            value={set.reps}
+                            min={1}
+                            step={1}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value, 10) || 1;
+                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, reps: val } : s));
+                            }}
+                            style={style}
+                        />
+                    </>
+                );
+            }
+
+            return (
+                <>
+                    {firstInput}
+                    {repsInput}
+                </>
+            )
+        }
+        return sets.map((set, idx) => {
+            const { label, step, min } = getSetInputProps(set, measurement, measurementUnit, hasReps);
+            return (
+                <div key={set.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 15, color: '#333' }}>Set {idx + 1}:</span>
+                    {getInputs({ set, idx, measurement, measurementUnit, label })}
+
+                    <button
+                        type="button"
+                        style={{ background: '#eee', color: '#d32f2f', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                        onClick={() => setSets(sets => sets.filter((_, i) => i !== idx))}
+                        aria-label="Remove Set"
+                    >
+                        &minus;
+                    </button>
+                </div>
+            );
+        });
+    }
+    function getSetInputProps(set: SetItem, measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean) {
+        let label = '';
+        let step = 1;
+        let min = 0;
+        if (set.type === 'time' || measurement === 'Time') {
+            label = 'time:';
+            min = 0;
+            step = hasReps ? 0.5 : 1;
+        } else if (measurementUnit && measurementUnit !== 'None') {
+            label = `${measurementUnit}:`;
+            min = 0;
+            step = hasReps ? 0.5 : 1;
+        } else {
+            label = 'weight:';
+            min = 0;
+            step = hasReps ? 0.5 : 1;
+        }
+        return { label, step, min };
+    }
     const [title, setTitle] = useState(exercise?.title || '');
     const [measurement, setMeasurement] = useState<"Time" | "Weight" | "Body Weight" | undefined>(exercise?.measurement);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -112,65 +219,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                         </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {sets.length === 0 ? (
-                            <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>
-                        ) : (
-                            sets.map((set, idx) => {
-                                let label = '';
-                                let step = 1;
-                                let min = 0;
-                                if (set.type === 'time' || measurement === 'Time') {
-                                    label = 'time:';
-                                    min = 0;
-                                    step = hasReps ? 0.5 : 1;
-                                } else {
-                                    label = 'weight:';
-                                    min = 0;
-                                    step = hasReps ? 0.5 : 1;
-                                }
-                                return (
-                                    <div key={set.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: 15, color: '#333' }}>Set {idx + 1}:</span>
-                                        <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
-                                        <input
-                                            type="number"
-                                            value={set.value}
-                                            min={min}
-                                            step={step}
-                                            onChange={e => {
-                                                const val = parseFloat(e.target.value) || 0;
-                                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, value: val } : s));
-                                            }}
-                                            style={{ width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' }}
-                                        />
-                                        {hasReps && (
-                                            <>
-                                                <span style={{ color: '#888', fontSize: 14 }}>reps:</span>
-                                                <input
-                                                    type="number"
-                                                    value={set.reps ?? 1}
-                                                    min={1}
-                                                    step={1}
-                                                    onChange={e => {
-                                                        const val = parseInt(e.target.value, 10) || 1;
-                                                        setSets(sets => sets.map((s, i) => i === idx ? { ...s, reps: val } : s));
-                                                    }}
-                                                    style={{ width: 50, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' }}
-                                                />
-                                            </>
-                                        )}
-                                        <button
-                                            type="button"
-                                            style={{ background: '#eee', color: '#d32f2f', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
-                                            onClick={() => setSets(sets => sets.filter((_, i) => i !== idx))}
-                                            aria-label="Remove Set"
-                                        >
-                                            &minus;
-                                        </button>
-                                    </div>
-                                );
-                            })
-                        )}
+                        {renderSetInputs(sets, measurement, measurementUnit, hasReps, setSets)}
                     </div>
                 </div>
 
