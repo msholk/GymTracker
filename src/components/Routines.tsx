@@ -17,6 +17,7 @@ interface Exercise {
     measurement?: 'Time' | 'Weight' | 'Body Weight';
     hasRepetitions?: boolean;
     sets?: SetItem[];
+    measurementUnit?: 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
 }
 
 interface Routine {
@@ -364,6 +365,25 @@ const Routines: React.FC = () => {
                                                     >
                                                         <span style={{ flex: 1 }}>
                                                             {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
+                                                            {ex.sets && ex.sets.length > 0 && (
+                                                                <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
+                                                                    {ex.sets.map((set, i) => {
+                                                                        let desc = '';
+                                                                        // If set.type exists and is 'time', show as seconds
+                                                                        if ('type' in set && set.type === 'time') {
+                                                                            desc = `${set.value}s`;
+                                                                        } else {
+                                                                            desc = `${set.value}`;
+                                                                            // Add measurement unit abbreviation if available
+                                                                            if (ex.measurementUnit && ex.measurementUnit !== 'None') {
+                                                                                desc += ex.measurementUnit.slice(0, 2);
+                                                                            }
+                                                                            if ('reps' in set && typeof set.reps === 'number') desc += ` x${set.reps}`;
+                                                                        }
+                                                                        return desc;
+                                                                    }).join(', ')}
+                                                                </span>
+                                                            )}
                                                         </span>
                                                         <button
                                                             style={{
