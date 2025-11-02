@@ -202,7 +202,6 @@ const Routines: React.FC = () => {
         setRoutines(routines => routines.map(r => {
             if (r.id === routineId) {
                 const updatedExercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
-                debugger;
                 updateDoc(doc(db, 'routines', routineId), { exercises: updatedExercises });
                 return { ...r, exercises: updatedExercises };
             }
@@ -454,7 +453,6 @@ const Routines: React.FC = () => {
                                                                 setRoutines(routines => routines.map(r =>
                                                                     r.id === routine.id ? { ...r, exercises: updatedExercises } : r
                                                                 ));
-                                                                debugger;
                                                                 updateDoc(doc(db, 'routines', routine.id), { exercises: updatedExercises });
                                                             }}
                                                         >
@@ -474,7 +472,7 @@ const Routines: React.FC = () => {
                                                                                 <span style={{ color: '#888', marginLeft: 6 }}>
                                                                                     ({new Date(latestHistory.timestamp).toLocaleDateString()})
                                                                                 </span>
-                                                                            )}
+                                                                            )} Difficulty: {latestHistory.difficulty}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -575,7 +573,6 @@ const Routines: React.FC = () => {
                         if (r.id !== exerciseDialog.routineId) return r;
                         const exercises = r.exercises ? [...r.exercises] : [];
                         exercises[exerciseDialog.exerciseIdx] = { ...exercises[exerciseDialog.exerciseIdx], ...updated };
-                        debugger;
                         updateDoc(doc(db, 'routines', r.id), { exercises });
                         return { ...r, exercises };
                     }));
@@ -586,7 +583,6 @@ const Routines: React.FC = () => {
                     setRoutines(routines => routines.map(r => {
                         if (r.id !== exerciseDialog.routineId) return r;
                         const exercises = (r.exercises || []).filter((_, i) => i !== exerciseDialog.exerciseIdx);
-                        debugger;
                         updateDoc(doc(db, 'routines', r.id), { exercises });
                         return { ...r, exercises };
                     }));

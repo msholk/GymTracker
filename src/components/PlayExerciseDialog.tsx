@@ -203,7 +203,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                             <span style={{ color: '#888', marginLeft: 6 }}>
                                 ({new Date(latestHistory.timestamp).toLocaleDateString()})
                             </span>
-                        )}
+                        )} Difficulty: {latestHistory.difficulty}
                     </div>
                 )}
 
