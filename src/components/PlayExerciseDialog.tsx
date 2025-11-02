@@ -174,6 +174,8 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
     const [sets, setSets] = useState<SetItem[]>(cleanSets);
     const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>(exercise?.measurementUnit || 'None');
     const hasReps = exercise?.hasRepetitions ?? true;
+    // State for difficulty
+    const [difficulty, setDifficulty] = useState(3); // 1-5, default to 3 (Medium)
 
     React.useEffect(() => {
         setTitle(exercise?.title || '');
@@ -185,6 +187,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
         });
         setSets(cleanSets);
         setMeasurementUnit(exercise?.measurementUnit || 'None');
+        setDifficulty(3); // Reset to Medium on open
     }, [exercise]);
 
     if (!open || !exercise) return null;
@@ -209,21 +212,34 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                 <div style={{ marginTop: 10, marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                         <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Sets</span>
-
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {renderSetInputs(sets, measurement, measurementUnit, hasReps, setSets)}
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 18 }}>
+                {/* Difficulty select */}
+                <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B', marginRight: 8 }}>How hard was it?</label>
+                    <select
+                        value={difficulty}
+                        onChange={e => setDifficulty(Number(e.target.value))}
+                        style={{ fontSize: 15, padding: '7px 10px', borderRadius: 8, border: '1px solid #ccc', minWidth: 120 }}
+                    >
+                        <option value={1}>Don't feel I have trained</option>
+                        <option value={2}>It was easy</option>
+                        <option value={3}>It was okay</option>
+                        <option value={4}>I have made an effort</option>
+                        <option value={5}>Almost impossible</option>
+                    </select>
+                </div>
 
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 18 }}>
                     <button
                         style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
                         onClick={async () => {
                             const sanitizedSets = sets.map(set => ({ ...set, reps: set.reps === undefined ? 0 : set.reps }));
-                            // Try to get uid from localStorage (if using Firebase Auth, adjust as needed)
-
                             const historyData = {
                                 exerciseId: exercise.id,
                                 title,
@@ -231,8 +247,9 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                                 measurementUnit,
                                 sets: sanitizedSets,
                                 timestamp: Date.now(),
+                                difficulty,
                             };
-                            await saveExerciseHistory(historyData, exercise);
+                            await saveExerciseHistory(historyData);
                             onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
                         }}
                         disabled={!title.trim()}
@@ -244,7 +261,6 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                 </div>
             </div>
             {/* Delete confirmation dialog */}
-
         </div>
     );
 };
