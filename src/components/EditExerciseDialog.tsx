@@ -1,26 +1,5 @@
 import React, { useState } from 'react';
-
-
-type SetItem = {
-    id: string;
-    hasReps?: boolean;
-    hasTime?: boolean;
-    hasWeight?: boolean;
-    reps?: number;
-    time?: number;
-    weight?: number;
-};
-
-type MeasurementUnit = 'Unit' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
-interface ExerciseProps {
-    id: string;
-    title: string;
-    hasRepetitions?: boolean;
-    hasTime?: boolean;
-    hasWeight?: boolean;
-    measurementUnit?: MeasurementUnit;
-    sets?: SetItem[];
-}
+import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
 interface EditExerciseDialogProps {
     open: boolean;
     exercise: ExerciseProps | null;

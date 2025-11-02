@@ -1,5 +1,7 @@
 // ...existing code...
 import React, { useState, useEffect, useRef } from 'react';
+import type { ExerciseProps } from '../types/exercise';
+
 // Simple menu component for exercise actions
 // (Keep outside, but use only inside Routines)
 const ExerciseMenu = (
@@ -602,7 +604,7 @@ const Routines: React.FC = () => {
             {renderEditExerciseDialog && (
                 <EditExerciseDialog
                     open={true}
-                    exercise={exerciseDialog && exerciseDialog.exercise}
+                    exercise={exerciseDialog && exerciseDialog.exercise as ExerciseProps}
                     latestHistory={(() => {
                         if (!exerciseDialog) return null;
                         const routine = routines.find(r => r.id === exerciseDialog.routineId);
@@ -619,22 +621,24 @@ const Routines: React.FC = () => {
                             if (r.id !== exerciseDialog.routineId) return r;
                             const exercises = r.exercises ? [...r.exercises] : [];
                             delete updated.measurement;
-                            exercises[exerciseDialog.exerciseIdx] = { ...exercises[exerciseDialog.exerciseIdx], ...updated };
-                            updateDoc(doc(db, 'routines', r.id), { exercises });
-                            return { ...r, exercises };
+                            const newExercises = exercises.map((ex, i) =>
+                                i === exerciseDialog.exerciseIdx ? { ...ex, ...updated } : ex
+                            );
+                            updateDoc(doc(db, 'routines', r.id), { exercises: newExercises });
+                            return { ...r, exercises: newExercises };
                         });
                         console.log('Updated routines after exercise edit:', JSON.stringify(_routines, null, 2));
-                        setRoutines(_routines);
+                        setRoutines(() => _routines as Routine[]);
                         setExerciseDialog(null);
                     }}
                     onAddExercise={newExercise => {
-                        debugger
-                        setRoutines(routines => routines.map(r => {
-                            if (r.id !== showAddExerciseFor.routineId) return r;
+                        const _routines = routines.map(r => {
+                            if (r.id !== showAddExerciseFor?.routineId) return r;
                             const exercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
                             updateDoc(doc(db, 'routines', r.id), { exercises });
                             return { ...r, exercises };
-                        }));
+                        })
+                        setRoutines(() => _routines as Routine[]);
                         setShowAddExerciseFor(null);
                     }}
                     onDelete={() => {
