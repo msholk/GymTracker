@@ -457,6 +457,17 @@ const Routines: React.FC = () => {
                                                             }}
                                                         >
                                                             <span style={{ flex: 1 }}>
+                                                                {/* Show a checkmark if latestHistory is today */}
+                                                                {(() => {
+                                                                    if (!latestHistory) return null;
+                                                                    // Get today's date string (YYYY-MM-DD)
+                                                                    const todayStr = new Date().toISOString().slice(0, 10);
+                                                                    const historyDateStr = new Date(latestHistory.timestamp).toISOString().slice(0, 10);
+                                                                    if (historyDateStr === todayStr) {
+                                                                        return <span title="Completed today" style={{ color: '#4F8A8B', marginRight: 6, fontSize: 18, verticalAlign: 'middle' }}>✔️</span>;
+                                                                    }
+                                                                    return null;
+                                                                })()}
                                                                 {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
                                                                 {ex.sets && ex.sets.length > 0 && (
                                                                     <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
