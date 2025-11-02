@@ -75,7 +75,6 @@ function formatSetsShort(sets: any[], ex: any) {
 }
 import EditExerciseDialog from './EditExerciseDialog';
 import PlayExerciseDialog from './PlayExerciseDialog';
-import NewExerciseEditor from './NewExerciseEditor';
 import ExerciseHistoryDialog from './ExerciseHistoryDialog';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
@@ -127,6 +126,7 @@ const Routines: React.FC = () => {
     const [exerciseDialog, setExerciseDialog] = useState<{
         routineId: string;
         exerciseIdx: number;
+        exercise: Exercise;
     } | null>(null);
     const [exercisePlayDialog, setExercisePlayDialog] = useState<{
         routineId: string;
@@ -543,7 +543,7 @@ const Routines: React.FC = () => {
                                                                     // setExerciseMenu(null);
                                                                     setTimeout(() => {
                                                                         console.log('Edit clicked');
-                                                                        setExerciseDialog({ routineId: routine.id, exerciseIdx: idx });
+                                                                        setExerciseDialog({ routineId: routine.id, exerciseIdx: idx, exercise: ex });
                                                                     }, 0);
                                                                 }}
                                                                 onHistory={() => {
@@ -560,13 +560,7 @@ const Routines: React.FC = () => {
                                                 <div style={{ color: '#aaa', fontSize: 14 }}>No exercises</div>
                                             )}
                                         </div>
-                                        {/* Modal for NewExerciseEditor */}
-                                        {showAddExerciseFor === routine.id && (
-                                            <NewExerciseEditor
-                                                onSelect={ex => { addExerciseFromEditor(routine.id, ex); setShowAddExerciseFor(null); }}
-                                                onClose={() => setShowAddExerciseFor(null)}
-                                            />
-                                        )}
+
                                     </div>
                                     // Add state for showing NewExerciseEditor modal
                                 )}
@@ -577,97 +571,100 @@ const Routines: React.FC = () => {
                 ))}
             </div>
             {/* Exercise Edit Dialog/Modal */}
-            <EditExerciseDialog
-                open={!!exerciseDialog}
-                exercise={(() => {
-                    if (!exerciseDialog) return null;
-                    const routine = routines.find(r => r.id === exerciseDialog.routineId);
-                    if (!routine) return null;
-                    return routine.exercises?.[exerciseDialog.exerciseIdx] || null;
-                })()}
-                latestHistory={(() => {
-                    if (!exerciseDialog) return null;
-                    const routine = routines.find(r => r.id === exerciseDialog.routineId);
-                    if (!routine) return null;
-                    const exercise = routine.exercises?.[exerciseDialog.exerciseIdx];
-                    if (!exercise) return null;
-                    const historyItems = exerciseHistory.filter(h => h.exerciseId === exercise.id);
-                    if (historyItems.length === 0) return null;
-                    return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
-                })()}
-                onSave={updated => {
-                    if (!exerciseDialog) return;
-                    setRoutines(routines => routines.map(r => {
-                        if (r.id !== exerciseDialog.routineId) return r;
-                        const exercises = r.exercises ? [...r.exercises] : [];
-                        exercises[exerciseDialog.exerciseIdx] = { ...exercises[exerciseDialog.exerciseIdx], ...updated };
-                        updateDoc(doc(db, 'routines', r.id), { exercises });
-                        return { ...r, exercises };
-                    }));
-                    setExerciseDialog(null);
-                }}
-                onDelete={() => {
-                    if (!exerciseDialog) return;
-                    setRoutines(routines => routines.map(r => {
-                        if (r.id !== exerciseDialog.routineId) return r;
-                        const exercises = (r.exercises || []).filter((_, i) => i !== exerciseDialog.exerciseIdx);
-                        updateDoc(doc(db, 'routines', r.id), { exercises });
-                        return { ...r, exercises };
-                    }));
-                    setExerciseDialog(null);
-                }}
-                onClose={() => setExerciseDialog(null)}
-            />
-            <PlayExerciseDialog
-                open={!!exercisePlayDialog}
-                exercise={(() => {
-                    if (!exercisePlayDialog) return null;
-                    const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
-                    if (!routine) return null;
-                    return routine.exercises?.[exercisePlayDialog.exerciseIdx] || null;
-                })()}
-                latestHistory={(() => {
-                    if (!exercisePlayDialog) return null;
-                    const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
-                    if (!routine) return null;
-                    const exercise = routine.exercises?.[exercisePlayDialog.exerciseIdx];
-                    if (!exercise) return null;
-                    const historyItems = exerciseHistory.filter(h => h.exerciseId === exercise.id);
-                    if (historyItems.length === 0) return null;
-                    return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
-                })()}
-                onSave={async updated => {
-                    if (!exercisePlayDialog) return;
-                    // Refresh exercise history after saving
-                    if (user) {
-                        const newHistory = await getExerciseHistory(user.uid);
-                        setExerciseHistory(newHistory);
-                    }
-                    setExercisePlayDialog(null);
-                }}
-                onDelete={() => { }}
-                onClose={() => setExercisePlayDialog(null)}
-            />
+            {exerciseDialog && exerciseDialog.exercise && (
+                <EditExerciseDialog
+                    open={!!exerciseDialog || !!showAddExerciseFor}
+                    exercise={exerciseDialog.exercise}
+                    latestHistory={(() => {
+                        if (!exerciseDialog) return null;
+                        const routine = routines.find(r => r.id === exerciseDialog.routineId);
+                        if (!routine) return null;
+                        const exercise = routine.exercises?.[exerciseDialog.exerciseIdx];
+                        if (!exercise) return null;
+                        const historyItems = exerciseHistory.filter(h => h.exerciseId === exercise.id);
+                        if (historyItems.length === 0) return null;
+                        return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+                    })()}
+                    onSave={updated => {
+                        if (!exerciseDialog) return;
+                        setRoutines(routines => routines.map(r => {
+                            if (r.id !== exerciseDialog.routineId) return r;
+                            const exercises = r.exercises ? [...r.exercises] : [];
+                            exercises[exerciseDialog.exerciseIdx] = { ...exercises[exerciseDialog.exerciseIdx], ...updated };
+                            updateDoc(doc(db, 'routines', r.id), { exercises });
+                            return { ...r, exercises };
+                        }));
+                        setExerciseDialog(null);
+                    }}
+                    onDelete={() => {
+                        if (!exerciseDialog) return;
+                        setRoutines(routines => routines.map(r => {
+                            if (r.id !== exerciseDialog.routineId) return r;
+                            const exercises = (r.exercises || []).filter((_, i) => i !== exerciseDialog.exerciseIdx);
+                            updateDoc(doc(db, 'routines', r.id), { exercises });
+                            return { ...r, exercises };
+                        }));
+                        setExerciseDialog(null);
+                    }}
+                    onClose={() => setExerciseDialog(null)}
+                />
+            )}
+            {!!exercisePlayDialog && (
+                <PlayExerciseDialog
+                    open={!!exercisePlayDialog}
+                    exercise={(() => {
+                        if (!exercisePlayDialog) return null;
+                        const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
+                        if (!routine) return null;
+                        return routine.exercises?.[exercisePlayDialog.exerciseIdx] || null;
+                    })()}
+                    latestHistory={(() => {
+                        if (!exercisePlayDialog) return null;
+                        const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
+                        if (!routine) return null;
+                        const exercise = routine.exercises?.[exercisePlayDialog.exerciseIdx];
+                        if (!exercise) return null;
+                        const historyItems = exerciseHistory.filter(h => h.exerciseId === exercise.id);
+                        if (historyItems.length === 0) return null;
+                        return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+                    })()}
+                    onSave={async updated => {
+                        if (!exercisePlayDialog) return;
+                        // Refresh exercise history after saving
+                        if (user) {
+                            const newHistory = await getExerciseHistory(user.uid);
+                            setExerciseHistory(newHistory);
+                        }
+                        setExercisePlayDialog(null);
+                    }}
+                    onDelete={() => { }}
+                    onClose={() => setExercisePlayDialog(null)}
+                />
+            )}
+
             {/* Exercise History Dialog */}
-            <ExerciseHistoryDialog
-                open={!!exerciseHistoryDialog}
-                exerciseTitle={(() => {
-                    if (!exerciseHistoryDialog) return '';
-                    const routine = routines.find(r => r.id === exerciseHistoryDialog.routineId);
-                    if (!routine) return '';
-                    const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
-                    return exercise?.title || '';
-                })()}
-                history={(() => {
-                    if (!exerciseHistoryDialog) return [];
-                    const routine = routines.find(r => r.id === exerciseHistoryDialog.routineId);
-                    if (!routine) return [];
-                    const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
-                    if (!exercise) return [];
-                    return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
-                })()}
-                onClose={() => setExerciseHistoryDialog(null)}
-            />
+            {!!exerciseHistoryDialog && (
+                <ExerciseHistoryDialog
+                    open={!!exerciseHistoryDialog}
+                    exerciseTitle={(() => {
+                        if (!exerciseHistoryDialog) return '';
+                        const routine = routines.find(r => r.id === exerciseHistoryDialog.routineId);
+                        if (!routine) return '';
+                        const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
+                        return exercise?.title || '';
+                    })()}
+                    history={(() => {
+                        if (!exerciseHistoryDialog) return [];
+                        const routine = routines.find(r => r.id === exerciseHistoryDialog.routineId);
+                        if (!routine) return [];
+                        const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
+                        if (!exercise) return [];
+                        return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
+                    })()}
+                    onClose={() => setExerciseHistoryDialog(null)}
+                />
+            )}
+
         </div>
     );
 }
