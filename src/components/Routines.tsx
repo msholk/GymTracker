@@ -245,35 +245,159 @@ const Routines: React.FC = () => {
         setSelectedId(null);
     };
 
+    const Routinesheader = (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <h2 style={{ color: '#4F8A8B', fontWeight: 700, margin: 0 }}>Routines</h2>
+            <button
+                onClick={addRoutine}
+                style={{
+                    background: '#4F8A8B',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: 44,
+                    height: 44,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 28,
+                    fontWeight: 700,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                }}
+                aria-label="Add New Routine"
+                onMouseOver={e => (e.currentTarget.style.background = '#357376')}
+                onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
+            >
+                <span style={{ fontSize: 32, lineHeight: 1, marginTop: -2 }}>+</span>
+            </button>
+        </div>
+    )
+
+    interface RoutineHeaderInEditProps {
+        routine: Routine;
+        confirmDeleteId: string | null;
+    }
+
+    const RoutineHeaderInEdit: React.FC<RoutineHeaderInEditProps> = ({ routine, confirmDeleteId }) => {
+        return (
+            <>
+                <input
+                    type="text"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    placeholder="Routine title"
+                    style={{ fontSize: 18, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%', marginBottom: 12, boxSizing: 'border-box' }}
+                    autoFocus
+                    onClick={e => e.stopPropagation()}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                            style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                            onClick={e => { e.stopPropagation(); finishEditing(routine.id); }}
+                        >Save</button>
+                        <button
+                            style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(routine.id); }}
+                        >Delete</button>
+                        <button
+                            style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                            onClick={e => { e.stopPropagation(); cancelEditing(routine); }}
+                        >Cancel</button>
+                    </div>
+                </div>
+                {/* Exercises Section */}
+                <div style={{ marginTop: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                        <span style={{ fontWeight: 600, fontSize: 17, color: '#4F8A8B' }}>Exercises</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {(routine.exercises || []).map((ex: Exercise) => (
+                            <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '8px 14px', fontSize: 16, color: '#333' }}>{ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}</div>
+                        ))}
+                    </div>
+                </div>
+                {/* Confirmation dialog for delete */}
+                {confirmDeleteId === routine.id && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ background: '#fff', borderRadius: 12, padding: 36, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.13)' }}>
+                            <div style={{ fontWeight: 700, fontSize: 20, color: '#d32f2f', marginBottom: 12 }}>Delete Routine?</div>
+                            <div style={{ color: '#555', marginBottom: 28 }}>Are you sure you want to delete this routine? This action cannot be undone.</div>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
+                                <button
+                                    style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
+                                    onClick={() => deleteRoutine(confirmDeleteId)}
+                                >Delete</button>
+                                <button
+                                    style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
+                                    onClick={() => setConfirmDeleteId(null)}
+                                >Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
+        )
+    }
+    interface RoutineHeaderInReadModeProps {
+        routine: Routine;
+    }
+    const RoutineHeaderInReadMode: React.FC<RoutineHeaderInReadModeProps> = ({ routine }) => {
+        return (
+            <>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                    {selectedId === routine.id && editingId !== routine.id && (
+                        <button
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                marginRight: 10,
+                                cursor: 'pointer',
+                                fontSize: 22,
+                                color: '#888',
+                                padding: 2,
+                                borderRadius: 6,
+                                transition: 'background 0.2s',
+                            }}
+                            aria-label="Back to List"
+                            onClick={e => { e.stopPropagation(); setSelectedId(null); }}
+                            onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
+                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                        >
+                            &#8592;
+                        </button>
+                    )}
+                    <span style={{ fontSize: 20, fontWeight: 600, color: '#333' }}>{routine.title || 'Untitled Routine'}</span>
+                    {selectedId === routine.id && (
+                        <button
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                marginLeft: 8,
+                                cursor: 'pointer',
+                                fontSize: 22,
+                                color: '#888',
+                                padding: 2,
+                                borderRadius: 6,
+                                transition: 'background 0.2s',
+                            }}
+                            aria-label="Edit Routine Title"
+                            onClick={e => { e.stopPropagation(); setEditingId(routine.id); setEditTitle(routine.title); }}
+                            onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
+                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
+                        >
+                            &#8942;
+                        </button>
+                    )}
+                </div>
+            </>
+        )
+    }
     return (
         <div style={{ margin: '32px auto', maxWidth: 500, background: '#f4f6f8', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', padding: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                <h2 style={{ color: '#4F8A8B', fontWeight: 700, margin: 0 }}>Routines</h2>
-                <button
-                    onClick={addRoutine}
-                    style={{
-                        background: '#4F8A8B',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: 44,
-                        height: 44,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 28,
-                        fontWeight: 700,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s',
-                    }}
-                    aria-label="Add New Routine"
-                    onMouseOver={e => (e.currentTarget.style.background = '#357376')}
-                    onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
-                >
-                    <span style={{ fontSize: 32, lineHeight: 1, marginTop: -2 }}>+</span>
-                </button>
-            </div>
+            {Routinesheader}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {routines.map(routine => (
                     <div
@@ -296,110 +420,10 @@ const Routines: React.FC = () => {
                         }}
                     >
                         {editingId === routine.id ? (
-                            <>
-                                <input
-                                    type="text"
-                                    value={editTitle}
-                                    onChange={e => setEditTitle(e.target.value)}
-                                    placeholder="Routine title"
-                                    style={{ fontSize: 18, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%', marginBottom: 12, boxSizing: 'border-box' }}
-                                    autoFocus
-                                    onClick={e => e.stopPropagation()}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button
-                                            style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                                            onClick={e => { e.stopPropagation(); finishEditing(routine.id); }}
-                                        >Save</button>
-                                        <button
-                                            style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(routine.id); }}
-                                        >Delete</button>
-                                        <button
-                                            style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                                            onClick={e => { e.stopPropagation(); cancelEditing(routine); }}
-                                        >Cancel</button>
-                                    </div>
-                                </div>
-                                {/* Exercises Section */}
-                                <div style={{ marginTop: 24 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                                        <span style={{ fontWeight: 600, fontSize: 17, color: '#4F8A8B' }}>Exercises</span>
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(routine.exercises || []).map(ex => (
-                                            <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '8px 14px', fontSize: 16, color: '#333' }}>{ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}</div>
-                                        ))}
-                                    </div>
-                                </div>
-                                {/* Confirmation dialog for delete */}
-                                {confirmDeleteId === routine.id && (
-                                    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <div style={{ background: '#fff', borderRadius: 12, padding: 36, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.13)' }}>
-                                            <div style={{ fontWeight: 700, fontSize: 20, color: '#d32f2f', marginBottom: 12 }}>Delete Routine?</div>
-                                            <div style={{ color: '#555', marginBottom: 28 }}>Are you sure you want to delete this routine? This action cannot be undone.</div>
-                                            <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
-                                                <button
-                                                    style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-                                                    onClick={() => deleteRoutine(confirmDeleteId)}
-                                                >Delete</button>
-                                                <button
-                                                    style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-                                                    onClick={() => setConfirmDeleteId(null)}
-                                                >Cancel</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
+                            <RoutineHeaderInEdit routine={routine} confirmDeleteId={confirmDeleteId} />
                         ) : (
                             <>
-                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                                    {selectedId === routine.id && editingId !== routine.id && (
-                                        <button
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                marginRight: 10,
-                                                cursor: 'pointer',
-                                                fontSize: 22,
-                                                color: '#888',
-                                                padding: 2,
-                                                borderRadius: 6,
-                                                transition: 'background 0.2s',
-                                            }}
-                                            aria-label="Back to List"
-                                            onClick={e => { e.stopPropagation(); setSelectedId(null); }}
-                                            onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
-                                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
-                                        >
-                                            &#8592;
-                                        </button>
-                                    )}
-                                    <span style={{ fontSize: 20, fontWeight: 600, color: '#333' }}>{routine.title}</span>
-                                    {selectedId === routine.id && (
-                                        <button
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                marginLeft: 8,
-                                                cursor: 'pointer',
-                                                fontSize: 22,
-                                                color: '#888',
-                                                padding: 2,
-                                                borderRadius: 6,
-                                                transition: 'background 0.2s',
-                                            }}
-                                            aria-label="Edit Routine Title"
-                                            onClick={e => { e.stopPropagation(); setEditingId(routine.id); setEditTitle(routine.title); }}
-                                            onMouseOver={e => (e.currentTarget.style.background = '#f4f6f8')}
-                                            onMouseOut={e => (e.currentTarget.style.background = 'none')}
-                                        >
-                                            &#8942;
-                                        </button>
-                                    )}
-                                </div>
+                                <RoutineHeaderInReadMode routine={routine} />
                                 {/* Exercises list only in details mode */}
                                 {selectedId === routine.id && editingId !== routine.id && (
                                     <div style={{ marginTop: 16 }}>
@@ -564,7 +588,7 @@ const Routines: React.FC = () => {
                                     </div>
                                     // Add state for showing NewExerciseEditor modal
                                 )}
-                                {/* No edit hint in details mode */}
+
                             </>
                         )}
                     </div>
