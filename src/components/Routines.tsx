@@ -3,13 +3,14 @@ import React, { useState, useEffect, useRef } from 'react';
 // Simple menu component for exercise actions
 // (Keep outside, but use only inside Routines)
 const ExerciseMenu = (
-    { anchorRef, open, onClose, onPlay, onEdit }:
+    { anchorRef, open, onClose, onPlay, onEdit, onHistory }:
         {
             anchorRef: React.RefObject<HTMLButtonElement>,
             open: boolean,
             onClose: () => void,
             onPlay: () => void,
-            onEdit: () => void
+            onEdit: () => void,
+            onHistory: () => void
         }) => {
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -35,6 +36,11 @@ const ExerciseMenu = (
                 style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
                 onClick={onEdit}
             >Edit</button>
+            <hr></hr>
+            <button
+                style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
+                onClick={onHistory}
+            >History</button>
         </div>
     );
 };
@@ -125,6 +131,10 @@ const Routines: React.FC = () => {
         routineId: string;
         exerciseIdx: number;
         exerciseId: string;
+    } | null>(null);
+    const [exerciseHistoryDialog, setExerciseHistoryDialog] = useState<{
+        routineId: string;
+        exerciseIdx: number;
     } | null>(null);
 
     const [routines, setRoutines] = useState<Routine[]>([]);
@@ -535,6 +545,12 @@ const Routines: React.FC = () => {
                                                                         setExerciseDialog({ routineId: routine.id, exerciseIdx: idx });
                                                                     }, 0);
                                                                 }}
+                                                                onHistory={() => {
+                                                                    setTimeout(() => {
+                                                                        console.log('History clicked');
+                                                                        setExerciseHistoryDialog({ routineId: routine.id, exerciseIdx: idx });
+                                                                    }, 0);
+                                                                }}
                                                             />
                                                         </div>
                                                     );
@@ -619,8 +635,13 @@ const Routines: React.FC = () => {
                     if (historyItems.length === 0) return null;
                     return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
                 })()}
-                onSave={updated => {
+                onSave={async updated => {
                     if (!exercisePlayDialog) return;
+                    // Refresh exercise history after saving
+                    if (user) {
+                        const newHistory = await getExerciseHistory(user.uid);
+                        setExerciseHistory(newHistory);
+                    }
                     setExercisePlayDialog(null);
                 }}
                 onDelete={() => { }}
