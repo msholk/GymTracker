@@ -181,13 +181,13 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                         onChange={e => setMeasurement(e.target.value as 'Time' | 'Weight' | 'Body Weight')}
                         style={{ fontSize: 15, padding: '7px 10px', borderRadius: 8, border: '1px solid #ccc', width: '100%' }}
                     >
-                        <option value="">Select measurement</option>
+                        <option value="">Just reps</option>
                         <option value="Time">Time</option>
                         <option value="Weight">Weight</option>
                         <option value="Body Weight">Body Weight</option>
                     </select>
                 </div>
-                <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 8, display: measurement ? 'block' : 'none' }}>
                     <label style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>Measurement Unit</label>
                     <select
                         value={measurementUnit}
