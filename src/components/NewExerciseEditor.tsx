@@ -5,6 +5,13 @@ interface NewExerciseEditorProps {
     onClose: () => void;
 }
 
+//     showAddExerciseFor === routine.id && (
+//         <NewExerciseEditor
+//             onSelect={ex => { addExerciseFromEditor(routine.id, ex); setShowAddExerciseFor(null); }}
+//             onClose={() => setShowAddExerciseFor(null)}
+//         />
+//     )
+// }
 
 const measurementTypes = ['Time', 'Weight', 'Body Weight'] as const;
 const measurementUnits = ['None', 'Kg', 'Lb', 'Plate', 'Hole'] as const;

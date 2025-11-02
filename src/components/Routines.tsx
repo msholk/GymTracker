@@ -142,7 +142,9 @@ const Routines: React.FC = () => {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     // Add state for showing NewExerciseEditor modal
-    const [showAddExerciseFor, setShowAddExerciseFor] = useState<string | null>(null);
+    const [showAddExerciseFor, setShowAddExerciseFor] = useState<{
+        routineId: string;
+    } | null>(null);
 
     const selectRoutine = (routine: Routine) => {
         setSelectedId(routine.id);
@@ -395,6 +397,8 @@ const Routines: React.FC = () => {
             </>
         )
     }
+
+    const renderEditExerciseDialog = (exerciseDialog && exerciseDialog.exercise || !!showAddExerciseFor)
     return (
         <div style={{ margin: '32px auto', maxWidth: 500, background: '#f4f6f8', borderRadius: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', padding: 32 }}>
             {Routinesheader}
@@ -447,7 +451,7 @@ const Routines: React.FC = () => {
                                                     transition: 'background 0.2s',
                                                 }}
                                                 aria-label="Add Exercise"
-                                                onClick={e => { e.stopPropagation(); setShowAddExerciseFor(routine.id); }}
+                                                onClick={e => { e.stopPropagation(); setShowAddExerciseFor({ routineId: routine.id }); }}
                                                 onMouseOver={e => (e.currentTarget.style.background = '#357376')}
                                                 onMouseOut={e => (e.currentTarget.style.background = '#4F8A8B')}
                                             >
@@ -595,10 +599,10 @@ const Routines: React.FC = () => {
                 ))}
             </div>
             {/* Exercise Edit Dialog/Modal */}
-            {exerciseDialog && exerciseDialog.exercise && (
+            {renderEditExerciseDialog && (
                 <EditExerciseDialog
-                    open={!!exerciseDialog || !!showAddExerciseFor}
-                    exercise={exerciseDialog.exercise}
+                    open={true}
+                    exercise={exerciseDialog && exerciseDialog.exercise}
                     latestHistory={(() => {
                         if (!exerciseDialog) return null;
                         const routine = routines.find(r => r.id === exerciseDialog.routineId);
@@ -611,14 +615,27 @@ const Routines: React.FC = () => {
                     })()}
                     onSave={updated => {
                         if (!exerciseDialog) return;
-                        setRoutines(routines => routines.map(r => {
+                        const _routines = routines.map(r => {
                             if (r.id !== exerciseDialog.routineId) return r;
                             const exercises = r.exercises ? [...r.exercises] : [];
+                            delete updated.measurement;
                             exercises[exerciseDialog.exerciseIdx] = { ...exercises[exerciseDialog.exerciseIdx], ...updated };
                             updateDoc(doc(db, 'routines', r.id), { exercises });
                             return { ...r, exercises };
-                        }));
+                        });
+                        console.log('Updated routines after exercise edit:', JSON.stringify(_routines, null, 2));
+                        setRoutines(_routines);
                         setExerciseDialog(null);
+                    }}
+                    onAddExercise={newExercise => {
+                        debugger
+                        setRoutines(routines => routines.map(r => {
+                            if (r.id !== showAddExerciseFor.routineId) return r;
+                            const exercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
+                            updateDoc(doc(db, 'routines', r.id), { exercises });
+                            return { ...r, exercises };
+                        }));
+                        setShowAddExerciseFor(null);
                     }}
                     onDelete={() => {
                         if (!exerciseDialog) return;
@@ -630,7 +647,10 @@ const Routines: React.FC = () => {
                         }));
                         setExerciseDialog(null);
                     }}
-                    onClose={() => setExerciseDialog(null)}
+                    onClose={() => {
+                        setExerciseDialog(null)
+                        setShowAddExerciseFor(null);
+                    }}
                 />
             )}
             {!!exercisePlayDialog && (
