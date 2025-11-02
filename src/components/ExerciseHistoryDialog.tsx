@@ -8,31 +8,7 @@ interface ExerciseHistoryDialogProps {
     onClose: () => void;
 }
 
-const formatSetsShort = (sets: any[], ex: any) => {
-    if (!sets || sets.length === 0) return '';
-    const setDesc = (set: any) => {
-        if ('type' in set && set.type === 'time') {
-            return `${set.value}s`;
-        } else {
-            let desc = `${set.value}`;
-            if (ex.measurementUnit && ex.measurementUnit !== 'None') {
-                desc += ex.measurementUnit.slice(0, 2);
-            } else desc = '';
-            if ('reps' in set && typeof set.reps === 'number') desc += ` x${set.reps}`;
-            return desc;
-        }
-    };
-    const firstDesc = setDesc(sets[0]);
-    const allSame = sets.every(s => setDesc(s) === firstDesc);
-    if (allSame) {
-        if (sets.length === 1) {
-            return firstDesc;
-        }
-        return `${sets.length} x (${firstDesc})`;
-    } else {
-        return sets.map(setDesc).join(', ');
-    }
-};
+import { formatSetsShort } from '../utils/formatSetsShort';
 
 const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exerciseTitle, history, onClose }) => {
     if (!open) return null;

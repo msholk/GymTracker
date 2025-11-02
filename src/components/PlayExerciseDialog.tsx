@@ -1,18 +1,14 @@
 
 import React, { useState } from 'react';
 import { saveExerciseHistory } from '../data/exerciseHistory';
+import { formatSetsShort } from '../utils/formatSetsShort';
 
+import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
 
-type SetItem = {
-    id: string;
-    value: number;
-    type?: 'time' | 'weight';
-    reps?: number;
+interface PlaySetItem extends SetItem {
     completed?: boolean;
-    difficulty?: number;
-};
+}
 
-type MeasurementUnit = 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
 interface PlayExerciseDialogProps {
     open: boolean;
     exercise: {
@@ -24,24 +20,24 @@ interface PlayExerciseDialogProps {
         measurementUnit?: MeasurementUnit;
     } | null;
     latestHistory?: {
-        sets: SetItem[];
+        sets: PlaySetItem[];
         timestamp: number;
         difficulty?: number;
     } | null;
-    onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: SetItem[]; measurementUnit?: MeasurementUnit }) => void;
+    onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: PlaySetItem[]; measurementUnit?: MeasurementUnit }) => void;
     onDelete: () => void;
     onClose: () => void;
 }
 
 
 const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise, latestHistory, onSave, onDelete, onClose }) => {
-    function renderSetInputs(sets: SetItem[], measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
+    function renderSetInputs(sets: PlaySetItem[], measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
         if (sets.length === 0) {
             return <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>;
         }
         function getInputs({ set, idx, measurement, measurementUnit, label }:
             {
-                set: SetItem;
+                set: PlaySetItem;
                 idx: number;
                 measurement: string | undefined;
                 measurementUnit: MeasurementUnit;
@@ -52,39 +48,40 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                 // Render as label if completed
                 return (
                     <>
+                        <span style={{ color: '#888', fontSize: 14 }}>{formatSetsShort([set], exercise)}</span>
+                    </>
+                );
+            }
+            // Generic input for a numeric property
+            function renderSetNumberInput({
+                label,
+                property,
+                min = 0,
+                step = 1,
+                value,
+                setSets,
+                idx
+            }: {
+                label: string;
+                property: keyof PlaySetItem;
+                min?: number;
+                step?: number;
+                value: number | undefined;
+                setSets: React.Dispatch<React.SetStateAction<PlaySetItem[]>>;
+                idx: number;
+            }) {
+                const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
+                return (
+                    <>
                         <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
-                        <span style={{ color: '#333', fontSize: 15, marginRight: 8 }}>{set.value}</span>
-                        {hasReps && <><span style={{ color: '#888', fontSize: 14 }}>reps:</span> <span style={{ color: '#333', fontSize: 15 }}>{set.reps}</span></>}
-                    </>
-                );
-            }
-            let firstInput = null;
-            if (measurement === 'Time' || measurement === 'Weight') {
-                let lblCtrl = null
-                let step = 0.5
-                if (measurement === 'Time') {
-                    lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>secs</span>
-                    step = 1
-                }
-                else if (measurement === 'Weight') {
-                    lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>{measurementUnit}</span>
-                    if (label.includes('Plate') || label.includes('Hole')) {
-                        step = 1
-                    }
-                }
-
-
-                firstInput = (
-                    <>
-                        {lblCtrl}
                         <input
                             type="number"
-                            value={set.value}
-                            min={0}
+                            value={value ?? 0}
+                            min={min}
                             step={step}
-                            onChange={(e) => {
+                            onChange={e => {
                                 const val = parseFloat(e.target.value) || 0;
-                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, value: val } : s));
+                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, [property]: val } : s));
                             }}
                             style={style}
                         />
@@ -92,31 +89,44 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                 );
             }
 
+            let timeInput = null;
+            if (set.hasTime) {
+                timeInput = renderSetNumberInput({
+                    label: "secs",
+                    property: 'reps',
+                    min: 0,
+                    step: 1,
+                    value: set.reps,
+                    setSets,
+                    idx
+                });
+            }
+            let weightInput = null;
+            if (set.hasWeight) {
+                weightInput = renderSetNumberInput({
+                    label: measurementUnit + "s",
+                    property: 'weight',
+                    min: 0,
+                    step: measurementUnit === 'Kg' || measurementUnit === 'Lb' ? 0.5 : 1,
+                    value: set.weight,
+                    setSets,
+                    idx
+                });
+            }
             let repsInput = null;
-            if (hasReps) {
-                repsInput = (
-                    <>
-                        <span style={{ color: '#888', fontSize: 14 }}>reps:</span>
-                        <input
-                            type="number"
-                            value={set.reps}
-                            min={1}
-                            step={1}
-                            onChange={(e) => {
-                                const val = parseInt(e.target.value, 10) || 1;
-                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, reps: val } : s));
-                            }}
-                            style={style}
-                        />
-                    </>
-                );
+            if (set.hasReps) {
+                repsInput = renderSetNumberInput({
+                    label: "reps",
+                    property: 'reps',
+                    min: 1,
+                    step: 1,
+                    value: set.reps,
+                    setSets,
+                    idx
+                });
             }
-
             return (
-                <>
-                    {firstInput}
-                    {repsInput}
-                </>
+                <>{timeInput}{weightInput}{repsInput}</>
             )
         }
         return sets.map((set, idx) => {
@@ -153,7 +163,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
             );
         });
     }
-    function getSetInputProps(set: SetItem, measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean) {
+    function getSetInputProps(set: PlaySetItem, measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean) {
         let label = '';
         let step = 1;
         let min = 0;
@@ -179,7 +189,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
         const { completed, ...rest } = s as any;
         return rest;
     });
-    const [sets, setSets] = useState<SetItem[]>(cleanSets);
+    const [sets, setSets] = useState<PlaySetItem[]>(cleanSets);
     const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>(exercise?.measurementUnit || 'None');
     const hasReps = exercise?.hasRepetitions ?? true;
     // State for difficulty
@@ -206,7 +216,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                 <div style={{ fontWeight: 700, fontSize: 18, color: '#4F8A8B' }}>{title}</div>
                 {latestHistory && (
                     <div style={{ color: '#4F8A8B', fontSize: 14, fontStyle: 'italic', marginBottom: 6 }}>
-                        Last: {latestHistory.sets && latestHistory.sets.length > 0 ? latestHistory.sets.map(s => `${s.value}${s.reps ? ` x${s.reps}` : ''}`).join(', ') : 'No sets'}
+                        Last: {formatSetsShort(latestHistory.sets, exercise)}
                         {latestHistory.timestamp && (
                             <span style={{ color: '#888', marginLeft: 6 }}>
                                 ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})

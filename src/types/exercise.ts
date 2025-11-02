@@ -19,5 +19,4 @@ export interface ExerciseProps {
     hasWeight?: boolean;
     measurementUnit?: MeasurementUnit;
     sets?: SetItem[];
-    measurement?: 'Time' | 'Weight' | 'Body Weight';
 }
