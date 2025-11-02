@@ -22,6 +22,7 @@ interface EditExerciseDialogProps {
     latestHistory?: {
         sets: SetItem[];
         timestamp: number;
+        difficulty?: string;
     } | null;
     onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: SetItem[]; measurementUnit?: MeasurementUnit }) => void;
     onDelete: () => void;
