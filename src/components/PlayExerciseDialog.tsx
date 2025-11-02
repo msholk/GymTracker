@@ -139,7 +139,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                         aria-label={set.completed ? 'Unmark as Completed' : 'Mark as Completed'}
                         title={set.completed ? 'Unmark as Completed' : 'Mark as Completed'}
                     >
-                        {set.completed ? '✓' : '○'}
+                        {set.completed ? '✓' : '▶'}
                     </button>
                 </div>
             );
