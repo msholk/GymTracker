@@ -76,6 +76,7 @@ function formatSetsShort(sets: any[], ex: any) {
 import EditExerciseDialog from './EditExerciseDialog';
 import PlayExerciseDialog from './PlayExerciseDialog';
 import NewExerciseEditor from './NewExerciseEditor';
+import ExerciseHistoryDialog from './ExerciseHistoryDialog';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
@@ -493,7 +494,7 @@ const Routines: React.FC = () => {
                                                                                 <span style={{ color: '#888', marginLeft: 6 }}>
                                                                                     ({new Date(latestHistory.timestamp).toLocaleDateString()})
                                                                                 </span>
-                                                                            )} Difficulty: {latestHistory.difficulty}
+                                                                            )}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -646,6 +647,26 @@ const Routines: React.FC = () => {
                 }}
                 onDelete={() => { }}
                 onClose={() => setExercisePlayDialog(null)}
+            />
+            {/* Exercise History Dialog */}
+            <ExerciseHistoryDialog
+                open={!!exerciseHistoryDialog}
+                exerciseTitle={(() => {
+                    if (!exerciseHistoryDialog) return '';
+                    const routine = routines.find(r => r.id === exerciseHistoryDialog.routineId);
+                    if (!routine) return '';
+                    const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
+                    return exercise?.title || '';
+                })()}
+                history={(() => {
+                    if (!exerciseHistoryDialog) return [];
+                    const routine = routines.find(r => r.id === exerciseHistoryDialog.routineId);
+                    if (!routine) return [];
+                    const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
+                    if (!exercise) return [];
+                    return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
+                })()}
+                onClose={() => setExerciseHistoryDialog(null)}
             />
         </div>
     );
