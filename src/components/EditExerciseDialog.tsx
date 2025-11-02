@@ -45,15 +45,19 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
             const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
             let firstInput = null;
             if (measurement === 'Time' || measurement === 'Weight') {
-                let lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
+                let lblCtrl = null
                 let step = 0.5
                 if (measurement === 'Time') {
                     lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>secs</span>
                     step = 1
                 }
-                else if (label.includes('Plate') || label.includes('Hole')) {
-                    step = 1
+                else if (measurement === 'Weight') {
+                    lblCtrl = <span style={{ color: '#888', fontSize: 14 }}>{measurementUnit}</span>
+                    if (label.includes('Plate') || label.includes('Hole')) {
+                        step = 1
+                    }
                 }
+
                 firstInput = (
                     <>
                         {lblCtrl}
