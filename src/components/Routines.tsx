@@ -559,6 +559,16 @@ const Routines: React.FC = () => {
                     if (!routine) return null;
                     return routine.exercises?.[exerciseDialog.exerciseIdx] || null;
                 })()}
+                latestHistory={(() => {
+                    if (!exerciseDialog) return null;
+                    const routine = routines.find(r => r.id === exerciseDialog.routineId);
+                    if (!routine) return null;
+                    const exercise = routine.exercises?.[exerciseDialog.exerciseIdx];
+                    if (!exercise) return null;
+                    const historyItems = exerciseHistory.filter(h => h.exerciseId === exercise.id);
+                    if (historyItems.length === 0) return null;
+                    return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+                })()}
                 onSave={updated => {
                     if (!exerciseDialog) return;
                     setRoutines(routines => routines.map(r => {
@@ -591,6 +601,16 @@ const Routines: React.FC = () => {
                     const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
                     if (!routine) return null;
                     return routine.exercises?.[exercisePlayDialog.exerciseIdx] || null;
+                })()}
+                latestHistory={(() => {
+                    if (!exercisePlayDialog) return null;
+                    const routine = routines.find(r => r.id === exercisePlayDialog.routineId);
+                    if (!routine) return null;
+                    const exercise = routine.exercises?.[exercisePlayDialog.exerciseIdx];
+                    if (!exercise) return null;
+                    const historyItems = exerciseHistory.filter(h => h.exerciseId === exercise.id);
+                    if (historyItems.length === 0) return null;
+                    return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
                 })()}
                 onSave={updated => {
                     if (!exercisePlayDialog) return;

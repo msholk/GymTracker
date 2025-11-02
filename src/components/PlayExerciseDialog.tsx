@@ -11,7 +11,7 @@ type SetItem = {
 };
 
 type MeasurementUnit = 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
-interface EditExerciseDialogProps {
+interface PlayExerciseDialogProps {
     open: boolean;
     exercise: {
         id: string;
@@ -21,13 +21,17 @@ interface EditExerciseDialogProps {
         sets?: SetItem[];
         measurementUnit?: MeasurementUnit;
     } | null;
+    latestHistory?: {
+        sets: SetItem[];
+        timestamp: number;
+    } | null;
     onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: SetItem[]; measurementUnit?: MeasurementUnit }) => void;
     onDelete: () => void;
     onClose: () => void;
 }
 
 
-const PlayExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise, onSave, onDelete, onClose }) => {
+const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise, latestHistory, onSave, onDelete, onClose }) => {
     function renderSetInputs(sets: SetItem[], measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
         if (sets.length === 0) {
             return <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>;
@@ -189,6 +193,16 @@ const PlayExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.13)', display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div style={{ fontWeight: 700, fontSize: 18, color: '#4F8A8B' }}>{title}</div>
+                {latestHistory && (
+                    <div style={{ color: '#4F8A8B', fontSize: 14, fontStyle: 'italic', marginBottom: 6 }}>
+                        Last: {latestHistory.sets && latestHistory.sets.length > 0 ? latestHistory.sets.map(s => `${s.value}${s.reps ? ` x${s.reps}` : ''}`).join(', ') : 'No sets'}
+                        {latestHistory.timestamp && (
+                            <span style={{ color: '#888', marginLeft: 6 }}>
+                                ({new Date(latestHistory.timestamp).toLocaleDateString()})
+                            </span>
+                        )}
+                    </div>
+                )}
 
 
                 {/* Sets List */}
