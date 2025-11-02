@@ -8,6 +8,8 @@ type SetItem = {
     value: number;
     type?: 'time' | 'weight';
     reps?: number;
+    completed?: boolean;
+    difficulty?: number;
 };
 
 type MeasurementUnit = 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
@@ -24,6 +26,7 @@ interface PlayExerciseDialogProps {
     latestHistory?: {
         sets: SetItem[];
         timestamp: number;
+        difficulty?: number;
     } | null;
     onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: SetItem[]; measurementUnit?: MeasurementUnit }) => void;
     onDelete: () => void;
@@ -208,7 +211,12 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                             <span style={{ color: '#888', marginLeft: 6 }}>
                                 ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
                             </span>
-                        )} Difficulty: {latestHistory.difficulty}
+                        )}
+                        {typeof latestHistory.difficulty === 'number' && (
+                            <span style={{ marginLeft: 8 }}>
+                                Difficulty: {latestHistory.difficulty}
+                            </span>
+                        )}
                     </div>
                 )}
 
