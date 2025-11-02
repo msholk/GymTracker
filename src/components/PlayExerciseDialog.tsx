@@ -201,7 +201,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                         Last: {latestHistory.sets && latestHistory.sets.length > 0 ? latestHistory.sets.map(s => `${s.value}${s.reps ? ` x${s.reps}` : ''}`).join(', ') : 'No sets'}
                         {latestHistory.timestamp && (
                             <span style={{ color: '#888', marginLeft: 6 }}>
-                                ({new Date(latestHistory.timestamp).toLocaleDateString()})
+                                ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
                             </span>
                         )} Difficulty: {latestHistory.difficulty}
                     </div>

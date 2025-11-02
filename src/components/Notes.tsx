@@ -26,7 +26,7 @@ const Notes: React.FC = () => {
 
     const addNote = async () => {
         if (newNote.trim() && user) {
-            const now = new Date();
+            const now = new Date(); // Use toLocaleDateString if displaying this date
             const noteData = {
                 title: 'Untitled',
                 content: newNote,

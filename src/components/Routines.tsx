@@ -472,8 +472,8 @@ const Routines: React.FC = () => {
                                                                 {(() => {
                                                                     if (!latestHistory) return null;
                                                                     // Get today's date string (YYYY-MM-DD)
-                                                                    const todayStr = new Date().toISOString().slice(0, 10);
-                                                                    const historyDateStr = new Date(latestHistory.timestamp).toISOString().slice(0, 10);
+                                                                    const todayStr = new Date().toLocaleDateString('en-GB');
+                                                                    const historyDateStr = new Date(latestHistory.timestamp).toLocaleDateString('en-GB');
                                                                     if (historyDateStr === todayStr) {
                                                                         return <span title="Completed today" style={{ color: '#4F8A8B', marginRight: 6, fontSize: 18, verticalAlign: 'middle' }}>✔️</span>;
                                                                     }
@@ -492,7 +492,7 @@ const Routines: React.FC = () => {
                                                                             Last: {formatSetsShort(latestHistory.sets, ex)}
                                                                             {latestHistory.timestamp && (
                                                                                 <span style={{ color: '#888', marginLeft: 6 }}>
-                                                                                    ({new Date(latestHistory.timestamp).toLocaleDateString()})
+                                                                                    ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
                                                                                 </span>
                                                                             )}
                                                                         </span>

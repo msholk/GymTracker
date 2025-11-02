@@ -47,7 +47,7 @@ const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exe
                         {history.map((h, i) => (
                             <li key={h.timestamp + '-' + i} style={{ marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid #eee' }}>
                                 <div style={{ color: '#4F8A8B', fontSize: 15, fontWeight: 600 }}>
-                                    {new Date(h.timestamp).toLocaleDateString()}
+                                    {new Date(h.timestamp).toLocaleDateString('en-GB')}
                                 </div>
                                 <div style={{ color: '#333', fontSize: 14, marginTop: 2 }}>
                                     {formatSetsShort(h.sets, h)}  Difficulty: {h.difficulty}
