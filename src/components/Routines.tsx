@@ -221,6 +221,39 @@ const Routines: React.FC = () => {
         setSelectedId(null);
     };
 
+    const duplicateRoutine = async (id: string) => {
+        const routine = routines.find(r => r.id === id);
+        if (!routine) return;
+        setEditingId(null);
+
+        const newRoutine = {
+            title: routine.title + ' (Copy)',
+            createdAt: serverTimestamp(),
+            uid: routine.uid,
+            exercises: routine.exercises ? routine.exercises.map(ex => ({
+                ...ex,
+                id: Math.random().toString(36).substr(2, 9), // new id for each exercise
+                sets: ex.sets ? ex.sets.map(set => ({
+                    ...set,
+                    id: Math.random().toString(36).substr(2, 9) // new id for each set
+                })) : undefined
+            })) : []
+        };
+        const docRef = await addDoc(collection(db, 'routines'), newRoutine);
+        setRoutines(routines => [
+            {
+                ...newRoutine,
+                id: docRef.id,
+                createdAt: new Date(),
+                isEditing: true
+            },
+            ...routines
+        ]);
+        setEditingId(docRef.id);
+        setEditTitle(newRoutine.title);
+        setSelectedId(docRef.id);
+    }
+
     const Routinesheader = (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <h2 style={{ color: '#4F8A8B', fontWeight: 700, margin: 0 }}>Routines</h2>
@@ -275,6 +308,10 @@ const Routines: React.FC = () => {
                             onClick={e => { e.stopPropagation(); finishEditing(routine.id); }}
                         >Save</button>
                         <button
+                            style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                            onClick={e => { e.stopPropagation(); duplicateRoutine(routine.id); }}
+                        >Duplicate</button>
+                        <button
                             style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
                             onClick={e => { e.stopPropagation(); setConfirmDeleteId(routine.id); }}
                         >Delete</button>
@@ -306,6 +343,7 @@ const Routines: React.FC = () => {
                                     style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
                                     onClick={() => deleteRoutine(confirmDeleteId)}
                                 >Delete</button>
+
                                 <button
                                     style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
                                     onClick={() => setConfirmDeleteId(null)}
