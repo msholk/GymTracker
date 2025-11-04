@@ -2,6 +2,19 @@ import React from 'react';
 import type { SetItem, MeasurementUnit } from '../../types/exercise';
 import { formatSetsShort } from '../../utils/formatSetsShort';
 import { ExerciseProps } from '../../types/exercise';
+import '@ncdai/react-wheel-picker/dist/style.css';
+
+import type { WheelPickerOption } from "@ncdai/react-wheel-picker";
+import { WheelPicker } from "@ncdai/react-wheel-picker";
+import { WheelPickerWrapper } from "@ncdai/react-wheel-picker";
+const createArray = (min: number, max: number, step = 0): WheelPickerOption<number>[] => {
+    const options: WheelPickerOption<number>[] = [];
+    for (let v = min; v <= max; v += step) {
+        options.push({ value: v, label: v.toString() });
+    }
+    return options;
+};
+
 export function renderSetInputs(
     sets: SetItem[],
     measurementUnit: MeasurementUnit,
@@ -33,7 +46,7 @@ export function renderSetInputs(
 
         // Generic input for a numeric property
         function renderSetNumberInput({
-            label, property, min = 0, step = 1, value, setSets, idx
+            label, property, min = 0, step = 1, value, setSets, idx, max = 10
         }: {
             label: string;
             property: keyof SetItem;
@@ -42,21 +55,28 @@ export function renderSetInputs(
             value: number | undefined;
             setSets: React.Dispatch<React.SetStateAction<SetItem[]>>;
             idx: number;
+            max?: number;
         }) {
             const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
+            // Use WheelPicker for mobile-friendly number selection
+            // Generate options for the picker
+            const options = createArray(min, max, step);
+
             return (
                 <>
                     <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
-                    <input
-                        type="number"
-                        value={value ?? 0}
-                        min={min}
-                        step={step}
-                        onChange={e => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSets(sets => sets.map((s, i) => i === idx ? { ...s, [property]: val } : s));
-                        }}
-                        style={style} />
+                    <WheelPickerWrapper>
+                        <WheelPicker
+                            options={options}
+                            value={value ?? 0}
+                            onValueChange={(val: number) => {
+                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, [property]: val } : s));
+                            }}
+                            optionItemHeight={36}
+                            visibleCount={7}
+                            style={{ width: 60, display: 'inline-block' }}
+                        />
+                    </WheelPickerWrapper>
                 </>
             );
         }
@@ -68,6 +88,7 @@ export function renderSetInputs(
                 property: 'reps',
                 min: 0,
                 step: 1,
+                max: 600,
                 value: set.reps,
                 setSets,
                 idx
@@ -79,6 +100,7 @@ export function renderSetInputs(
                 label: measurementUnit + "s",
                 property: 'weight',
                 min: 0,
+                max: 150,
                 step: measurementUnit === 'Kg' || measurementUnit === 'Lb' ? 0.5 : 1,
                 value: set.weight,
                 setSets,
@@ -92,6 +114,7 @@ export function renderSetInputs(
                 property: 'reps',
                 min: 1,
                 step: 1,
+                max: 200,
                 value: set.reps,
                 setSets,
                 idx

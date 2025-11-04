@@ -1,16 +1,25 @@
 {
   "dependencies": {
+    "@ncdai/react-wheel-picker": "^1.0.19",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "firebase": "^12.4.0",
+    "lucide-react": "^0.552.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-firebase-hooks": "^5.1.1",
-    "react-router-dom": "^7.9.4"
+    "react-router-dom": "^7.9.4",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.1.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.16",
     "vite": "^7.1.12"
   },
   "scripts": {
