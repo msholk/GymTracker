@@ -36,7 +36,7 @@ export async function getExerciseHistory(uid: string): Promise<ExerciseHistoryRe
         const data = doc.data();
         return {
             ...data,
-            timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now(),
+            timestamp: typeof data.timestamp === 'string' ? Date.parse(data.timestamp) : (data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now()),
         } as ExerciseHistoryRecord;
     });
 }
