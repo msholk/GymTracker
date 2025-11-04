@@ -86,17 +86,21 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
                     <button
                         style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
                         onClick={async () => {
-                            const sanitizedSets = sets.map(set => ({ ...set, reps: set.reps === undefined ? 0 : set.reps }));
-                            // const historyData = {
-                            //     exerciseId: exercise.id,
-                            //     title,
-                            //     measurementUnit,
-                            //     sets: sanitizedSets,
-                            //     timestamp: Date.now(),
-                            //     difficulty,
-                            // };
-                            // await saveExerciseHistory(historyData);
-                            // onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
+                            const sanitizedSets = sets.map(set => ({
+                                id: set.id,
+                                value: set.value === undefined ? 0 : set.value,
+                                reps: set.reps === undefined ? 0 : set.reps
+                            }));
+                            const historyData: ExerciseHistoryRecord = {
+                                exerciseId: exercise.id,
+                                title,
+                                measurementUnit,
+                                sets: sanitizedSets,
+                                timestamp: Date.now(),
+                                difficulty,
+                            };
+                            await saveExerciseHistory(historyData);
+                            onSave({ id: exercise.id, title, sets: sanitizedSets, measurementUnit });
                         }}
                         disabled={!title.trim()}
                     >Save</button>
