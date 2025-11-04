@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
 import { ExerciseHistoryRecord } from '../data';
+import { renderSetInputs } from './SetInputs/renderSetInputs';
 interface EditExerciseDialogProps {
     open: boolean;
     exercise: ExerciseProps | null;
@@ -11,116 +12,8 @@ interface EditExerciseDialogProps {
     onClose: () => void;
 }
 
-
 const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise, latestHistory, onSave, onAddExercise, onDelete, onClose }) => {
-    function renderSetInputs(sets: SetItem[], measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
-        if (sets.length === 0) {
-            return <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>;
-        }
-        function getInputs({ set, idx }:
-            {
-                set: SetItem;
-                idx: number;
-            },) {
 
-
-            // Generic input for a numeric property
-            function renderSetNumberInput({
-                label,
-                property,
-                min = 0,
-                step = 1,
-                value,
-                setSets,
-                idx
-            }: {
-                label: string;
-                property: keyof SetItem;
-                min?: number;
-                step?: number;
-                value: number | undefined;
-                setSets: React.Dispatch<React.SetStateAction<SetItem[]>>;
-                idx: number;
-            }) {
-                const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
-                return (
-                    <>
-                        <span style={{ color: '#888', fontSize: 14 }}>{label}</span>
-                        <input
-                            type="number"
-                            value={value ?? 0}
-                            min={min}
-                            step={step}
-                            onChange={e => {
-                                const val = parseFloat(e.target.value) || 0;
-                                setSets(sets => sets.map((s, i) => i === idx ? { ...s, [property]: val } : s));
-                            }}
-                            style={style}
-                        />
-                    </>
-                );
-            }
-
-            let timeInput = null;
-            if (set.hasTime) {
-                timeInput = renderSetNumberInput({
-                    label: "secs",
-                    property: 'reps',
-                    min: 0,
-                    step: 1,
-                    value: set.reps,
-                    setSets,
-                    idx
-                });
-            }
-            let weightInput = null;
-            if (set.hasWeight) {
-                weightInput = renderSetNumberInput({
-                    label: measurementUnit + "s",
-                    property: 'weight',
-                    min: 0,
-                    step: measurementUnit === 'Kg' || measurementUnit === 'Lb' ? 0.5 : 1,
-                    value: set.weight,
-                    setSets,
-                    idx
-                });
-            }
-            let repsInput = null;
-            if (set.hasReps) {
-                repsInput = renderSetNumberInput({
-                    label: "reps",
-                    property: 'reps',
-                    min: 1,
-                    step: 1,
-                    value: set.reps,
-                    setSets,
-                    idx
-                });
-            }
-            return (
-                <>{timeInput}{weightInput}{repsInput}</>
-            )
-        }
-
-        return sets.map((set, idx) => {
-            return (
-                <div key={set.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 15, color: '#333' }}>Set {idx + 1}:</span>
-                    {getInputs({ set, idx })}
-
-
-                    <button
-                        type="button"
-                        style={{ background: '#eee', color: '#d32f2f', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
-                        onClick={() => setSets(sets => sets.filter((_, i) => i !== idx))}
-                        aria-label="Remove Set"
-                    >
-                        &minus;
-                    </button>
-                </div>
-            );
-        });
-    }
 
     const [title, setTitle] = useState(exercise?.title || '');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -372,7 +265,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                 <div style={{ marginTop: 10, marginBottom: 10 }}>
                     {SetsListHeaderBlock()}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {renderSetInputs(sets, measurementUnit, hasReps, setSets)}
+                        {renderSetInputs(sets, measurementUnit, setSets)}
                     </div>
                 </div>
 
