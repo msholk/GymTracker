@@ -135,7 +135,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                 onChange={e => setTitle(e.target.value)}
                 placeholder="Exercise title"
                 style={{ fontSize: 16, padding: '8px 12px', borderRadius: 8, border: '1px solid #ccc', width: '100%', marginBottom: 8, boxSizing: 'border-box' }}
-                autoFocus
+
             />
         )
     }
