@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
 import { ExerciseHistoryRecord, saveExerciseHistory } from '../data/exerciseHistory';
-import { formatSetsShort } from '../utils/formatSetsShort';
 
 import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
 import { renderSetInputs } from './SetInputs/renderSetInputs';
+import { LatestHistory } from './LatestHistory';
 interface PlaySetItem extends SetItem {
     completed?: boolean;
 }
@@ -17,7 +17,6 @@ interface PlayExerciseDialogProps {
     onDelete: () => void;
     onClose: () => void;
 }
-
 
 const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
     { open, exercise, latestHistory, onSave, onClose }) => {
@@ -47,25 +46,13 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
     if (!open || !exercise) return null;
     const measurementUnit = exercise.measurementUnit || 'Unit';
 
+
+
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.13)', display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div style={{ fontWeight: 700, fontSize: 18, color: '#4F8A8B' }}>{title}</div>
-                {latestHistory && (
-                    <div style={{ color: '#4F8A8B', fontSize: 14, fontStyle: 'italic', marginBottom: 6 }}>
-                        Last: {formatSetsShort(latestHistory)}
-                        {latestHistory.timestamp && (
-                            <span style={{ color: '#888', marginLeft: 6 }}>
-                                ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
-                            </span>
-                        )}
-                        {typeof latestHistory.difficulty === 'number' && (
-                            <span style={{ marginLeft: 8 }}>
-                                Difficulty: {latestHistory.difficulty}
-                            </span>
-                        )}
-                    </div>
-                )}
+                {LatestHistory(latestHistory)}
 
 
                 {/* Sets List */}

@@ -11,6 +11,7 @@ interface EditExerciseDialogProps {
     onDelete: () => void;
     onClose: () => void;
 }
+import { LatestHistory } from './LatestHistory';
 
 const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise, latestHistory, onSave, onAddExercise, onDelete, onClose }) => {
 
@@ -125,18 +126,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
             </div>
         )
     }
-    const LatestHistory = () => {
-        return latestHistory && (
-            <div style={{ color: '#4F8A8B', fontSize: 14, fontStyle: 'italic', marginBottom: 6 }}>
-                Last: {latestHistory.sets && latestHistory.sets.length > 0 ? latestHistory.sets.map(s => `${s.value}${s.reps ? ` x${s.reps}` : ''}`).join(', ') : 'No sets'}
-                {latestHistory.timestamp && (
-                    <span style={{ color: '#888', marginLeft: 6 }}>
-                        ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
-                    </span>
-                )} Difficulty: {latestHistory.difficulty}
-            </div>
-        )
-    }
+
     const ExerciseTile = () => {
         return (
             <input
@@ -249,7 +239,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.13)', display: 'flex', flexDirection: 'column', gap: 18 }}>
                 {DialogTitle()}
-                {LatestHistory()}
+                {LatestHistory(latestHistory)}
                 {ExerciseTile()}
                 <details {...(!exercise ? { open: true } : {})} style={{ marginBottom: 10 }}>
                     <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 15, color: '#4F8A8B', marginBottom: 6 }}>Exercise Options</summary>
