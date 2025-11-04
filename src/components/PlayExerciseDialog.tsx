@@ -19,8 +19,8 @@ interface PlayExerciseDialogProps {
 }
 
 const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
-    { open, exercise, latestHistory, onSave, onClose }) => {
 
+    { open, exercise, latestHistory, onSave, onClose }) => {
     const [title, setTitle] = useState(exercise?.title || '');
     // Remove 'completed' property from sets when initializing
     const cleanSets = (exercise?.sets || []).map(s => {
@@ -31,6 +31,8 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
     const hasReps = exercise?.hasRepetitions ?? true;
     // State for difficulty
     const [difficulty, setDifficulty] = useState(3); // 1-5, default to 3 (Medium)
+    // State for saving
+    const [isSaving, setIsSaving] = useState(false);
 
     React.useEffect(() => {
         setTitle(exercise?.title || '');
@@ -84,8 +86,9 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 18 }}>
                     <button
-                        style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+                        style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.7 : 1 }}
                         onClick={async () => {
+                            setIsSaving(true);
                             const sanitizedSets = sets.map(set => ({
                                 id: set.id,
                                 value: set.value === undefined ? 0 : set.value,
@@ -101,9 +104,11 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
                             };
                             await saveExerciseHistory(historyData);
                             onSave({ id: exercise.id, title, sets: sanitizedSets, measurementUnit });
+                            setIsSaving(false);
+                            onClose();
                         }}
-                        disabled={!title.trim()}
-                    >Save</button>
+                        disabled={!title.trim() || isSaving}
+                    >{isSaving ? 'Saving...' : 'Save'}</button>
                     <button
                         style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
                         onClick={onClose}
