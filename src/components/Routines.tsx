@@ -520,13 +520,13 @@ const Routines: React.FC = () => {
                                                                 {/* Show latest history if available */}
                                                                 {latestHistory && (
                                                                     <div>
-                                                                        <span style={{ color: '#4F8A8B', fontSize: 13, marginLeft: 12, fontStyle: 'italic' }}>
-                                                                            Last: {formatSetsShort(ex)}
+                                                                        <span style={{ color: '#4F8A8B', fontSize: 13, marginLeft: 0, fontStyle: 'italic' }}>
                                                                             {latestHistory.timestamp && (
-                                                                                <span style={{ color: '#888', marginLeft: 6 }}>
-                                                                                    ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
+                                                                                <span style={{ color: '#888', marginRight: 6 }}>
+                                                                                    {new Date(latestHistory.timestamp).toLocaleDateString('en-GB')}
                                                                                 </span>
                                                                             )}
+                                                                            {formatSetsShort(latestHistory)}
                                                                             {typeof latestHistory.difficulty === 'number' && (
                                                                                 <span style={{ marginLeft: 8 }}>
                                                                                     Diff: {latestHistory.difficulty}
