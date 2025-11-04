@@ -1,17 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ExerciseHistoryRecord } from '../data/exerciseHistory';
+import { deleteExerciseHistory } from '../data/exerciseHistory';
 
 interface ExerciseHistoryDialogProps {
     open: boolean;
     exerciseTitle: string;
     history: ExerciseHistoryRecord[];
     onClose: () => void;
+    onDelete?: () => void;
 }
 
 import { formatSetsShort } from '../utils/formatSetsShort';
 import { ExerciseProps } from '../types/exercise';
 
-const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exerciseTitle, history, onClose }) => {
+const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exerciseTitle, history, onClose, onDelete }) => {
+    const [deleting, setDeleting] = useState<string | null>(null);
+
+    // Helper to get docId from history entry (assume timestamp+sets hash is unique if no docId)
+    // Ideally, history should include Firestore docId. If not, this needs to be added in getExerciseHistory.
+    const getDocId = (h: ExerciseHistoryRecord & { docId?: string }) => (h as any).docId || '';
+
+    const handleDelete = async (h: ExerciseHistoryRecord & { docId?: string }) => {
+        const docId = getDocId(h);
+        if (!docId) {
+            alert('Cannot delete: missing document id.');
+            return;
+        }
+        setDeleting(docId);
+        try {
+            await deleteExerciseHistory(docId);
+            // Optionally, trigger a refresh or callback to parent to update history
+            onDelete && onDelete();
+        } catch (e) {
+            alert('Failed to delete history entry.');
+        } finally {
+            setDeleting(null);
+        }
+    };
     if (!open) return null;
     // Group history by date string (en-GB)
     const grouped: { [date: string]: ExerciseHistoryRecord[] } = {};
@@ -44,10 +69,15 @@ const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exe
                                 <div style={{ color: '#4F8A8B', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{date}</div>
                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                     {grouped[date].map((h, i) => (
-                                        <li key={h.timestamp + '-' + i} style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #eee' }}>
+                                        <li key={h.timestamp + '-' + i} style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <div style={{ color: '#333', fontSize: 14 }}>
                                                 {formatSetsShort(h)}  Difficulty: {h.difficulty}
                                             </div>
+                                            <button
+                                                style={{ marginLeft: 12, background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 13, cursor: 'pointer', opacity: deleting === getDocId(h) ? 0.6 : 1 }}
+                                                disabled={deleting === getDocId(h)}
+                                                onClick={() => handleDelete(h)}
+                                            >{deleting === getDocId(h) ? 'Deleting...' : '-'}</button>
                                         </li>
                                     ))}
                                 </ul>

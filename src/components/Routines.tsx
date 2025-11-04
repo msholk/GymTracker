@@ -716,6 +716,13 @@ const Routines: React.FC = () => {
                         return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
                     })()}
                     onClose={() => setExerciseHistoryDialog(null)}
+                    onDelete={async () => {
+                        // Refresh exercise history after deletion
+                        if (user) {
+                            const newHistory = await getExerciseHistory(user.uid);
+                            setExerciseHistory(newHistory);
+                        }
+                    }}
                 />
             )}
 
