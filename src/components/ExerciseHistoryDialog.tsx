@@ -9,6 +9,7 @@ interface ExerciseHistoryDialogProps {
 }
 
 import { formatSetsShort } from '../utils/formatSetsShort';
+import { ExerciseProps } from '../types/exercise';
 
 const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exerciseTitle, history, onClose }) => {
     if (!open) return null;
@@ -26,7 +27,7 @@ const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exe
                                     {new Date(h.timestamp).toLocaleDateString('en-GB')}
                                 </div>
                                 <div style={{ color: '#333', fontSize: 14, marginTop: 2 }}>
-                                    {formatSetsShort(h.sets, h)}  Difficulty: {h.difficulty}
+                                    {formatSetsShort(h)}  Difficulty: {h.difficulty}
                                 </div>
                             </li>
                         ))}

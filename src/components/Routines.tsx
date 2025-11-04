@@ -62,14 +62,7 @@ interface SetItem {
     id: string;
     value: number;
 }
-interface Exercise {
-    id: string;
-    title: string;
-    measurement?: 'Time' | 'Weight' | 'Body Weight';
-    hasRepetitions?: boolean;
-    sets?: SetItem[];
-    measurementUnit?: 'None' | 'Kg' | 'Lb' | 'Plate' | 'Hole';
-}
+
 
 interface Routine {
     id: string;
@@ -77,7 +70,7 @@ interface Routine {
     createdAt: Date;
     isEditing: boolean;
     uid: string;
-    exercises?: Exercise[];
+    exercises?: ExerciseProps[];
 }
 
 const Routines: React.FC = () => {
@@ -100,7 +93,7 @@ const Routines: React.FC = () => {
     const [exerciseDialog, setExerciseDialog] = useState<{
         routineId: string;
         exerciseIdx: number;
-        exercise: Exercise;
+        exercise: ExerciseProps;
     } | null>(null);
     const [exercisePlayDialog, setExercisePlayDialog] = useState<{
         routineId: string;
@@ -180,10 +173,9 @@ const Routines: React.FC = () => {
 
     // Add new exercise from NewExerciseEditor
     const addExerciseFromEditor = async (routineId: string, ex: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight'; hasRepetitions: boolean }) => {
-        const newExercise: Exercise = {
+        const newExercise: ExerciseProps = {
             id: Math.random().toString(36).substr(2, 9),
             title: ex.name,
-            measurement: ex.measurement,
             hasRepetitions: ex.hasRepetitions
         };
         setRoutines(routines => routines.map(r => {
@@ -327,7 +319,7 @@ const Routines: React.FC = () => {
                         <span style={{ fontWeight: 600, fontSize: 17, color: '#4F8A8B' }}>Exercises</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {(routine.exercises || []).map((ex: Exercise) => (
+                        {(routine.exercises || []).map((ex: ExerciseProps) => (
                             <div key={ex.id} style={{ background: '#f4f6f8', borderRadius: 8, padding: '8px 14px', fontSize: 16, color: '#333' }}>{ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}</div>
                         ))}
                     </div>
@@ -522,14 +514,14 @@ const Routines: React.FC = () => {
                                                                 {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
                                                                 {ex.sets && ex.sets.length > 0 && (
                                                                     <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
-                                                                        {formatSetsShort(ex.sets, ex)}
+                                                                        {formatSetsShort(ex)}
                                                                     </span>
                                                                 )}
                                                                 {/* Show latest history if available */}
                                                                 {latestHistory && (
                                                                     <div>
                                                                         <span style={{ color: '#4F8A8B', fontSize: 13, marginLeft: 12, fontStyle: 'italic' }}>
-                                                                            Last: {formatSetsShort(latestHistory.sets, ex)}
+                                                                            Last: {formatSetsShort(ex)}
                                                                             {latestHistory.timestamp && (
                                                                                 <span style={{ color: '#888', marginLeft: 6 }}>
                                                                                     ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})

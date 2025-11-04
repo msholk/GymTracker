@@ -11,6 +11,7 @@ export interface ExerciseHistoryRecord {
     measurement?: 'Time' | 'Weight' | 'Body Weight';
     measurementUnit?: string;
     timestamp: number; // Unix epoch ms
+    difficulty: number;
 }
 
 

@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
+import { ExerciseHistoryRecord } from '../data';
 interface EditExerciseDialogProps {
     open: boolean;
     exercise: ExerciseProps | null;
-    latestHistory?: {
-        sets: SetItem[];
-        timestamp: number;
-        difficulty?: string;
-    } | null;
+    latestHistory?: ExerciseHistoryRecord | null;
     onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: SetItem[]; measurementUnit?: MeasurementUnit }) => void;
     onAddExercise: (newExercise: ExerciseProps) => void;
     onDelete: () => void;
@@ -16,7 +13,7 @@ interface EditExerciseDialogProps {
 
 
 const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise, latestHistory, onSave, onAddExercise, onDelete, onClose }) => {
-    function renderSetInputs(sets: SetItem[], measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
+    function renderSetInputs(sets: SetItem[], measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
         if (sets.length === 0) {
             return <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>;
         }
@@ -126,7 +123,6 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
     }
 
     const [title, setTitle] = useState(exercise?.title || '');
-    const [measurement, setMeasurement] = useState<"Time" | "Weight" | "Body Weight" | undefined>(exercise?.measurement);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [sets, setSets] = useState<SetItem[]>(exercise?.sets || []);
     const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>(exercise?.measurementUnit || 'Unit');
@@ -137,7 +133,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
 
     React.useEffect(() => {
         setTitle(exercise?.title || '');
-        setMeasurement(exercise?.measurement);
+
         setSets(exercise?.sets || []);
         setMeasurementUnit(exercise?.measurementUnit || 'Unit');
     }, [exercise]);
@@ -332,7 +328,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                             hasReps: set.hasReps === undefined ? false : set.hasReps
                         }));
                         if (exercise) {
-                            onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
+                            onSave({ id: exercise.id, title, sets: sanitizedSets, measurementUnit });
                         }
                         else {
                             let _title = title || 'New Exercise';
@@ -376,7 +372,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                 <div style={{ marginTop: 10, marginBottom: 10 }}>
                     {SetsListHeaderBlock()}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {renderSetInputs(sets, measurement, measurementUnit, hasReps, setSets)}
+                        {renderSetInputs(sets, measurementUnit, hasReps, setSets)}
                     </div>
                 </div>
 

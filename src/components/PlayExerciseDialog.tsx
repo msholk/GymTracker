@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { saveExerciseHistory } from '../data/exerciseHistory';
+import { ExerciseHistoryRecord, saveExerciseHistory } from '../data/exerciseHistory';
 import { formatSetsShort } from '../utils/formatSetsShort';
 
 import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
@@ -11,44 +11,33 @@ interface PlaySetItem extends SetItem {
 
 interface PlayExerciseDialogProps {
     open: boolean;
-    exercise: {
-        id: string;
-        title: string;
-        measurement?: 'Time' | 'Weight' | 'Body Weight';
-        hasRepetitions?: boolean;
-        sets?: SetItem[];
-        measurementUnit?: MeasurementUnit;
-    } | null;
-    latestHistory?: {
-        sets: PlaySetItem[];
-        timestamp: number;
-        difficulty?: number;
-    } | null;
+    exercise?: ExerciseProps | null | undefined;
+    latestHistory?: ExerciseHistoryRecord | null | undefined;
     onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: PlaySetItem[]; measurementUnit?: MeasurementUnit }) => void;
     onDelete: () => void;
     onClose: () => void;
 }
 
 
-const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise, latestHistory, onSave, onDelete, onClose }) => {
-    function renderSetInputs(sets: PlaySetItem[], measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
+const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
+    { open, exercise, latestHistory, onSave, onClose }) => {
+    function renderSetInputs(sets: PlaySetItem[], measurementUnit: MeasurementUnit, hasReps: boolean, setSets: React.Dispatch<React.SetStateAction<SetItem[]>>) {
         if (sets.length === 0) {
             return <span style={{ color: '#aaa', fontSize: 14 }}>No sets</span>;
         }
-        function getInputs({ set, idx, measurement, measurementUnit, label }:
+        function getInputs({ set, idx, measurementUnit }:
             {
                 set: PlaySetItem;
                 idx: number;
-                measurement: string | undefined;
                 measurementUnit: MeasurementUnit;
                 label: string;
             },) {
-            const style = { width: 60, fontSize: 15, padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc' };
             if (set.completed) {
                 // Render as label if completed
                 return (
                     <>
-                        <span style={{ color: '#888', fontSize: 14 }}>{formatSetsShort([set], exercise)}</span>
+                        <span style={{ color: '#888', fontSize: 14 }}>{
+                            formatSetsShort(exercise)}</span>
                     </>
                 );
             }
@@ -130,11 +119,10 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
             )
         }
         return sets.map((set, idx) => {
-            const { label, step, min } = getSetInputProps(set, measurement, measurementUnit, hasReps);
             return (
                 <div key={set.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 15, color: '#333' }}>Set {idx + 1}:</span>
-                    {getInputs({ set, idx, measurement, measurementUnit, label })}
+                    {getInputs({ set, idx, measurementUnit, label: "label" })}
 
                     <button
                         type="button"
@@ -163,48 +151,26 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
             );
         });
     }
-    function getSetInputProps(set: PlaySetItem, measurement: string | undefined, measurementUnit: MeasurementUnit, hasReps: boolean) {
-        let label = '';
-        let step = 1;
-        let min = 0;
-        if (set.type === 'time' || measurement === 'Time') {
-            label = 'time:';
-            min = 0;
-            step = hasReps ? 0.5 : 1;
-        } else if (measurementUnit && measurementUnit !== 'None') {
-            label = `${measurementUnit}:`;
-            min = 0;
-            step = hasReps ? 0.5 : 1;
-        } else {
-            label = 'weight:';
-            min = 0;
-            step = hasReps ? 0.5 : 1;
-        }
-        return { label, step, min };
-    }
+
     const [title, setTitle] = useState(exercise?.title || '');
-    const [measurement, setMeasurement] = useState<"Time" | "Weight" | "Body Weight" | undefined>(exercise?.measurement);
     // Remove 'completed' property from sets when initializing
     const cleanSets = (exercise?.sets || []).map(s => {
         const { completed, ...rest } = s as any;
         return rest;
     });
     const [sets, setSets] = useState<PlaySetItem[]>(cleanSets);
-    const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>(exercise?.measurementUnit || 'None');
     const hasReps = exercise?.hasRepetitions ?? true;
     // State for difficulty
     const [difficulty, setDifficulty] = useState(3); // 1-5, default to 3 (Medium)
 
     React.useEffect(() => {
         setTitle(exercise?.title || '');
-        setMeasurement(exercise?.measurement);
         // Remove 'completed' property from sets when updating
         const cleanSets = (exercise?.sets || []).map(s => {
             const { completed, ...rest } = s as any;
             return rest;
         });
         setSets(cleanSets);
-        setMeasurementUnit(exercise?.measurementUnit || 'None');
         setDifficulty(3); // Reset to Medium on open
     }, [exercise]);
 
@@ -216,7 +182,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                 <div style={{ fontWeight: 700, fontSize: 18, color: '#4F8A8B' }}>{title}</div>
                 {latestHistory && (
                     <div style={{ color: '#4F8A8B', fontSize: 14, fontStyle: 'italic', marginBottom: 6 }}>
-                        Last: {formatSetsShort(latestHistory.sets, exercise)}
+                        Last: {formatSetsShort(latestHistory)}
                         {latestHistory.timestamp && (
                             <span style={{ color: '#888', marginLeft: 6 }}>
                                 ({new Date(latestHistory.timestamp).toLocaleDateString('en-GB')})
@@ -237,7 +203,7 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                         <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Sets</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {renderSetInputs(sets, measurement, measurementUnit, hasReps, setSets)}
+                        {/*renderSetInputs(sets, measurement, measurementUnit, hasReps, setSets)*/}
                     </div>
                 </div>
 
@@ -263,17 +229,16 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = ({ open, exercise,
                         style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 22px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
                         onClick={async () => {
                             const sanitizedSets = sets.map(set => ({ ...set, reps: set.reps === undefined ? 0 : set.reps }));
-                            const historyData = {
-                                exerciseId: exercise.id,
-                                title,
-                                measurement,
-                                measurementUnit,
-                                sets: sanitizedSets,
-                                timestamp: Date.now(),
-                                difficulty,
-                            };
-                            await saveExerciseHistory(historyData);
-                            onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
+                            // const historyData = {
+                            //     exerciseId: exercise.id,
+                            //     title,
+                            //     measurementUnit,
+                            //     sets: sanitizedSets,
+                            //     timestamp: Date.now(),
+                            //     difficulty,
+                            // };
+                            // await saveExerciseHistory(historyData);
+                            // onSave({ id: exercise.id, title, measurement, sets: sanitizedSets, measurementUnit });
                         }}
                         disabled={!title.trim()}
                     >Save</button>

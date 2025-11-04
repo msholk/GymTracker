@@ -9,6 +9,7 @@ export interface SetItem {
     time?: number;
     weight?: number;
     value?: number;
+    completed?: boolean;
 }
 
 export interface ExerciseProps {
