@@ -144,7 +144,7 @@ export function renderSetInputs(
     return sets.map((set, idx) => {
         return (
             <div key={set.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 15, color: '#333' }}>Set {idx + 1}:</span>
+                <span className='setNumberInput'>Set {idx + 1}:</span>
                 {getInputs({ set, idx })}
                 {getSetButton({ set, idx })}
 

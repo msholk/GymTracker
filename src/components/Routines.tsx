@@ -1,5 +1,6 @@
 // ...existing code...
 import React, { useState, useEffect, useRef } from 'react';
+import '../styles.css';
 import type { ExerciseProps } from '../types/exercise';
 import { formatSetsShort } from '../utils/formatSetsShort';
 
@@ -513,9 +514,9 @@ const Routines: React.FC = () => {
                                                                 })()}
                                                                 {ex.title || <span style={{ color: '#aaa' }}>Untitled Exercise</span>}
                                                                 {ex.sets && ex.sets.length > 0 && (
-                                                                    <span style={{ color: '#888', fontSize: 13, marginLeft: 8 }}>
+                                                                    <div className='sets-summary' style={{ color: '#888', fontSize: 13, }}>
                                                                         {formatSetsShort(ex)}
-                                                                    </span>
+                                                                    </div>
                                                                 )}
                                                                 {/* Show latest history if available */}
                                                                 {latestHistory && (
@@ -656,9 +657,10 @@ const Routines: React.FC = () => {
                             return { ...r, exercises };
                         }));
                         setExerciseDialog(null);
+                        setShowAddExerciseFor(null);
                     }}
                     onClose={() => {
-                        setExerciseDialog(null)
+                        setExerciseDialog(null);
                         setShowAddExerciseFor(null);
                     }}
                 />

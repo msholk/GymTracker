@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
 import { ExerciseHistoryRecord } from '../data';
 import { renderSetInputs } from './SetInputs/renderSetInputs';
+import '../styles.css';
 interface EditExerciseDialogProps {
     open: boolean;
     exercise: ExerciseProps | null;
