@@ -91,8 +91,13 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
                             setIsSaving(true);
                             const sanitizedSets = sets.map(set => ({
                                 id: set.id,
-                                value: set.value === undefined ? 0 : set.value,
-                                reps: set.reps === undefined ? 0 : set.reps
+                                weight: set.weight === undefined ? 0 : set.weight,
+                                reps: set.reps === undefined ? 0 : set.reps,
+                                time: set.time === undefined ? 0 : set.time,
+                                measurementUnit: exercise.measurementUnit,
+                                hasRepetitions: !!exercise.hasRepetitions,
+                                hasWeight: !!exercise.hasWeight,
+                                hasTime: !!exercise.hasTime,
                             }));
                             const historyData: ExerciseHistoryRecord = {
                                 exerciseId: exercise.id,

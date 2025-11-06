@@ -11,8 +11,13 @@ export interface ExerciseHistoryRecord {
         id: string;
         value: number;
         reps?: number;
+        time?: number;
+        measurementUnit?: string;
+        hasRepetitions?: boolean;
+        hasWeight?: boolean;
+        hasTime?: boolean;
+
     }>;
-    measurement?: 'Time' | 'Weight' | 'Body Weight';
     measurementUnit?: string;
     timestamp: number; // Unix epoch ms
     difficulty: number;

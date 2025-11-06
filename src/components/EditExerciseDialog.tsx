@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import _ from 'lodash';
 import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
 import { ExerciseHistoryRecord } from '../data';
 import { renderSetInputs } from './SetInputs/renderSetInputs';
@@ -7,7 +8,14 @@ interface EditExerciseDialogProps {
     open: boolean;
     exercise: ExerciseProps | null;
     latestHistory?: ExerciseHistoryRecord | null;
-    onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: SetItem[]; measurementUnit?: MeasurementUnit }) => void;
+    onSave: (updated: {
+        id: string; title: string;
+        sets?: SetItem[];
+        measurementUnit?: MeasurementUnit,
+        hasTime: boolean,
+        hasWeight: boolean,
+        hasRepetitions: boolean,
+    }) => void;
     onAddExercise: (newExercise: ExerciseProps) => void;
     onDelete: () => void;
     onClose: () => void;
@@ -22,9 +30,9 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
     const [sets, setSets] = useState<SetItem[]>(exercise?.sets || []);
     const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>(exercise?.measurementUnit || 'Unit');
     const hasReps = exercise?.hasRepetitions ?? true;
-    const [hasRepetitions, setHasRepetitions] = useState<boolean>(exercise?.hasRepetitions ?? true);
-    const [hasTime, setHasTime] = useState<boolean>(exercise?.hasTime ?? true);
-    const [hasWeight, setHasWeight] = useState<boolean>(exercise?.hasWeight ?? true);
+    const [hasRepetitions, setHasRepetitions] = useState<boolean>(exercise?.hasRepetitions ?? false);
+    const [hasTime, setHasTime] = useState<boolean>(exercise?.hasTime ?? false);
+    const [hasWeight, setHasWeight] = useState<boolean>(exercise?.hasWeight ?? false);
 
     React.useEffect(() => {
         setTitle(exercise?.title || '');
@@ -171,10 +179,28 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                 setSets([newSet]);
             }
         }
+        const addRepsToEachSet = () => {
+            const _sets = _.cloneDeep(sets);
+            const _reps = (_.first(_sets)?.reps || 0) + 1;
+            _.forEach(_sets, (_set) => {
+                _set.reps = _reps;
+            });
+            setSets(_sets);
+        }
         return (
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'right', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ fontWeight: 600, fontSize: 15, color: '#4F8A8B' }}>Sets</span>
+                {hasRepetitions && (
+                    <button
+                        type="button"
+                        style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: '8px', width: 60, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, cursor: 'pointer' }}
+                        onClick={addRepsToEachSet}
+                        aria-label="Add Set"
+                    >
+                        + rep
+                    </button>
+                )}
                 <button
                     type="button"
                     style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, cursor: 'pointer' }}
@@ -212,17 +238,25 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                             hasReps: set.hasReps === undefined ? false : set.hasReps
                         }));
                         if (exercise) {
-                            onSave({ id: exercise.id, title, sets: sanitizedSets, measurementUnit });
+                            onSave({
+                                id: exercise.id,
+                                title,
+                                sets: sanitizedSets,
+                                measurementUnit,
+                                hasTime: Boolean(hasTime),
+                                hasWeight: Boolean(hasWeight),
+                                hasRepetitions: Boolean(hasRepetitions),
+                            });
                         }
                         else {
                             let _title = title || 'New Exercise';
                             onAddExercise({
                                 id: Math.random().toString(36).substr(2, 9),
                                 title: _title || 'New Exercise',
+                                measurementUnit: measurementUnit || 'Unit',
                                 hasTime: Boolean(hasTime),
                                 hasWeight: Boolean(hasWeight),
                                 hasRepetitions: Boolean(hasRepetitions),
-                                measurementUnit: measurementUnit || 'Unit',
                                 sets: sanitizedSets,
                             });
                         }

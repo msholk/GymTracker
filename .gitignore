@@ -68,3 +68,4 @@ node_modules/
 # dataconnect generated files
 .dataconnect
 public/assets/
+public/index.html
