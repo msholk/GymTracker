@@ -7,44 +7,82 @@ import { formatSetsShort } from '../utils/formatSetsShort';
 // Simple menu component for exercise actions
 // (Keep outside, but use only inside Routines)
 const ExerciseMenu = (
-    { anchorRef, open, onClose, onPlay, onEdit, onHistory }:
+    { anchorRef, open, onClose, onPlay, onEdit, onHistory, exerciseTitle }:
         {
             anchorRef: React.RefObject<HTMLButtonElement>,
             open: boolean,
             onClose: () => void,
             onPlay: () => void,
             onEdit: () => void,
-            onHistory: () => void
+            onHistory: () => void,
+            exerciseTitle: string
         }) => {
+    // Centered modal dialog with icons
+    const dialogRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') onClose();
+        }
         function handleClickOutside(event: MouseEvent) {
-            if (anchorRef.current && !anchorRef.current.contains(event.target as Node)) {
+            if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
                 onClose();
             }
         }
         if (open) {
             document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleKeyDown);
         }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [open, anchorRef, onClose]);
+    }, [open, onClose]);
     if (!open) return null;
     return (
-        <div style={{ position: 'absolute', right: 0, top: 32, background: '#fff', border: '1px solid #ddd', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.13)', zIndex: 10, minWidth: 100 }}>
-            <button
-                style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
-                onClick={onPlay}
-            >Play</button>
-            <button
-                style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
-                onClick={onEdit}
-            >Edit</button>
-            <hr></hr>
-            <button
-                style={{ display: 'block', width: '100%', background: 'none', border: 'none', padding: '10px 18px', textAlign: 'left', cursor: 'pointer', fontSize: 15 }}
-                onClick={onHistory}
-            >History</button>
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.25)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        }}>
+            <div ref={dialogRef} style={{
+                background: '#fff',
+                borderRadius: 12,
+                boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+                padding: '32px 28px 24px 28px',
+                minWidth: 240,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                position: 'relative',
+            }}>
+                <button onClick={onClose} style={{ position: 'absolute', top: 10, right: 12, background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#888' }} aria-label="Close">×</button>
+                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 18 }}>{exerciseTitle}</div>
+                <button
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: 180, background: '#f5f5f5', border: 'none', borderRadius: 8, padding: '12px 0', margin: '6px 0', fontSize: 16, cursor: 'pointer', justifyContent: 'center' }}
+                    onClick={onPlay}
+                >
+                    <span role="img" aria-label="Play" style={{ fontSize: 22 }}>▶️</span> Play
+                </button>
+                <button
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: 180, background: '#f5f5f5', border: 'none', borderRadius: 8, padding: '12px 0', margin: '6px 0', fontSize: 16, cursor: 'pointer', justifyContent: 'center' }}
+                    onClick={onEdit}
+                >
+                    <span role="img" aria-label="Edit" style={{ fontSize: 22 }}>✏️</span> Edit
+                </button>
+                <button
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: 180, background: '#f5f5f5', border: 'none', borderRadius: 8, padding: '12px 0', margin: '6px 0', fontSize: 16, cursor: 'pointer', justifyContent: 'center' }}
+                    onClick={onHistory}
+                >
+                    <span role="img" aria-label="History" style={{ fontSize: 22 }}>📜</span> History
+                </button>
+            </div>
         </div>
     );
 };
@@ -568,28 +606,22 @@ const Routines: React.FC = () => {
                                                                         setExerciseMenu(null)
                                                                     }, 100);
                                                                 }}
-                                                                // onClose={() => { }}
                                                                 onPlay={() => {
-                                                                    //setExerciseMenu(null);
                                                                     setTimeout(() => {
-                                                                        console.log('Play clicked');
-                                                                        // Placeholder for Play action
                                                                         setExercisePlayDialog({ routineId: routine.id, exerciseIdx: idx, exerciseId: ex.id });
                                                                     }, 0);
                                                                 }}
                                                                 onEdit={() => {
-                                                                    // setExerciseMenu(null);
                                                                     setTimeout(() => {
-                                                                        console.log('Edit clicked');
                                                                         setExerciseDialog({ routineId: routine.id, exerciseIdx: idx, exercise: ex });
                                                                     }, 0);
                                                                 }}
                                                                 onHistory={() => {
                                                                     setTimeout(() => {
-                                                                        console.log('History clicked');
                                                                         setExerciseHistoryDialog({ routineId: routine.id, exerciseIdx: idx });
                                                                     }, 0);
                                                                 }}
+                                                                exerciseTitle={ex.title}
                                                             />
                                                         </div>
                                                     );
