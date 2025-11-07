@@ -9,7 +9,7 @@ export interface ExerciseHistoryRecord {
     title: string;
     sets: Array<{
         id: string;
-        value: number;
+        weight?: number;
         reps?: number;
         time?: number;
         measurementUnit?: string;
@@ -19,7 +19,7 @@ export interface ExerciseHistoryRecord {
 
     }>;
     measurementUnit?: string;
-    timestamp: number; // Unix epoch ms
+    timestamp: string; // Unix epoch ms
     difficulty: number;
     docId?: string;
 }
@@ -36,7 +36,10 @@ export async function saveExerciseHistory(record: ExerciseHistoryRecord) {
         timestamp: new Date().toISOString(), // Store as ISO string
     };
     console.log('Saving exercise history:', JSON.stringify(docData, null, 2));
-    await addDoc(collection(db, 'exercise_history'), docData);
+    setTimeout(async () => {
+        await addDoc(collection(db, 'exercise_history'), docData);
+        console.log('Exercise history saved successfully');
+    }, 3000); // Simulate delay
 }
 
 export async function getExerciseHistory(uid: string): Promise<ExerciseHistoryRecord[]> {

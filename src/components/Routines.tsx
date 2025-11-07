@@ -4,6 +4,7 @@ import '../styles.css';
 import type { ExerciseProps } from '../types/exercise';
 import { formatSetsShort } from '../utils/formatSetsShort';
 
+
 import ExerciseMenu from './ExerciseMenu';
 import EditExerciseDialog from './EditExerciseDialog';
 import PlayExerciseDialog from './PlayExerciseDialog';
@@ -11,15 +12,8 @@ import ExerciseHistoryDialog from './ExerciseHistoryDialog';
 import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
-import { getExerciseHistory, ExerciseHistoryRecord } from '../data/exerciseHistory';
+import { getExerciseHistory, ExerciseHistoryRecord, saveExerciseHistory } from '../data/exerciseHistory';
 
-
-
-
-interface SetItem {
-    id: string;
-    value: number;
-}
 
 
 export interface Routine {
@@ -31,20 +25,89 @@ export interface Routine {
     exercises?: ExerciseProps[];
 }
 
+// Utility class for caching exercise history in localStorage with expiry
+class HistoryCache {
+    private key: string;
+    private uid: string;
+    private expiryMs: number;
+    private setToUI: (data: ExerciseHistoryRecord[]) => void;
+    constructor(uid: string, expiryMs: number = 1000 * 60 * 10, setExerciseHistory: (data: ExerciseHistoryRecord[]) => void) {
+        this.key = 'exerciseHistory_' + uid;
+        this.uid = uid;
+        this.expiryMs = expiryMs;
+        this.setToUI = setExerciseHistory;
+    }
+    addRecord(historyRecord: ExerciseHistoryRecord) {
+        const history = this.getFromCache();
+        history.push(historyRecord);
+        this.setToCacheAndUI(history);
+        setTimeout(async () => {
+            await saveExerciseHistory(historyRecord);
+            this.getFromDb();
+        })
+    }
+    setToCacheAndUI(data: any) {
+        try {
+            const value = {
+                data,
+                expiry: Date.now() + this.expiryMs
+            };
+            localStorage.setItem(this.key, JSON.stringify(value));
+            this.setToUI(data);
+        } catch { }
+    }
+    getFromCache() {
+        try {
+            const raw = localStorage.getItem(this.key);
+            if (!raw) {
+                return [];
+            }
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.expiry && parsed.data && Date.now() < parsed.expiry) {
+                console.log('HistoryCache: fetched from localStorage');
+
+                return parsed.data;
+            }
+        } catch { }
+        return [];
+    }
+    setToUIFromCache() {
+        const fromCache = this.getFromCache();
+        this.setToUI(fromCache);
+    }
+
+    async getFromDb() {
+        console.log('HistoryCache: fetching from DB');
+        setTimeout(() => {
+            getExerciseHistory(this.uid)
+                .then(hst => {
+                    console.log('HistoryCache: fetched from DB');
+                    this.setToCacheAndUI(hst);
+                });
+        }, 5000);
+    }
+
+    async retrieve() {
+        this.setToUIFromCache();
+        this.getFromDb();
+    }
+}
+
+let historyCache: HistoryCache | null = null;
 const Routines: React.FC = () => {
     const { user } = useAuth();
     // State for exercise history
     const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistoryRecord[]>([]);
-    useEffect(() => {
-        if (!user) return;
-        getExerciseHistory(user.uid).then(setExerciseHistory);
-    }, [user]);
-    // UI state for editing
-    // State for which exercise menu is open: { routineId, exerciseIdx } | null
     const [exerciseMenu, setExerciseMenu] = useState<{ routineId: string, exerciseIdx: number } | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    useEffect(() => {
+        if (!user) return;
+        historyCache = new HistoryCache(user.uid, 1000 * 60 * 60 * 2, setExerciseHistory);
+        historyCache.retrieve();
+    }, [user]);
+
 
     // Routine selection and editing
     // Exercise edit dialog state
@@ -128,23 +191,6 @@ const Routines: React.FC = () => {
     };
 
 
-
-    // Add new exercise from NewExerciseEditor
-    const addExerciseFromEditor = async (routineId: string, ex: { name: string; measurement: 'Time' | 'Weight' | 'Body Weight'; hasRepetitions: boolean }) => {
-        const newExercise: ExerciseProps = {
-            id: Math.random().toString(36).substr(2, 9),
-            title: ex.name,
-            hasRepetitions: ex.hasRepetitions
-        };
-        setRoutines(routines => routines.map(r => {
-            if (r.id === routineId) {
-                const updatedExercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
-                updateDoc(doc(db, 'routines', routineId), { exercises: updatedExercises });
-                return { ...r, exercises: updatedExercises };
-            }
-            return r;
-        }));
-    };
 
     const finishEditing = async (id: string) => {
         await updateRoutineTitle(id, editTitle);
@@ -623,7 +669,7 @@ const Routines: React.FC = () => {
                         const _routines = routines.map(r => {
                             if (r.id !== exerciseDialog.routineId) return r;
                             const exercises = r.exercises ? [...r.exercises] : [];
-                            delete updated.measurement;
+                            // delete updated.measurement;
                             const newExercises = exercises.map((ex, i) =>
                                 i === exerciseDialog.exerciseIdx ? { ...ex, ...updated } : ex
                             );
@@ -680,14 +726,10 @@ const Routines: React.FC = () => {
                         if (historyItems.length === 0) return null;
                         return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
                     })()}
-                    onSave={async updated => {
+                    onSave={async historyRecord => {
                         if (!exercisePlayDialog) return;
-                        // Refresh exercise history after saving
-                        if (user) {
-                            const newHistory = await getExerciseHistory(user.uid);
-                            setExerciseHistory(newHistory);
-                        }
-                        setExercisePlayDialog(null);
+                        historyCache?.addRecord(historyRecord)
+                        setExercisePlayDialog(null)
                     }}
                     onDelete={() => { }}
                     onClose={() => setExercisePlayDialog(null)}
@@ -711,7 +753,7 @@ const Routines: React.FC = () => {
                         if (!routine) return [];
                         const exercise = routine.exercises?.[exerciseHistoryDialog.exerciseIdx];
                         if (!exercise) return [];
-                        return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => b.timestamp - a.timestamp);
+                        return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
                     })()}
                     onClose={() => setExerciseHistoryDialog(null)}
                     onDelete={async () => {
