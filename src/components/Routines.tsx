@@ -98,7 +98,17 @@ const Routines: React.FC = () => {
     const { user } = useAuth();
     // State for exercise history
     const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistoryRecord[]>([]);
-    const [exerciseMenu, setExerciseMenu] = useState<{ routineId: string, exerciseIdx: number } | null>(null);
+    const [exerciseMenuState, setExerciseMenuState] = useState<{ routineId: string, exerciseIdx: number } | null>(null);
+    const setExerciseMenu = (val: { routineId: string, exerciseIdx: number } | null) => {
+        if (val) {
+            // Always push a new history entry for menu dialog
+            window.history.pushState({ dialog: 'menu' }, '', window.location.pathname + window.location.search + '#menu');
+        } else if (window.location.hash === '#menu') {
+            // Go back in history to close menu and return to previous page
+            window.history.back();
+        }
+        setExerciseMenuState(val);
+    };
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -111,20 +121,82 @@ const Routines: React.FC = () => {
 
     // Routine selection and editing
     // Exercise edit dialog state
-    const [exerciseDialog, setExerciseDialog] = useState<{
+    const [exerciseDialog, setExerciseDialogState] = useState<{
         routineId: string;
         exerciseIdx: number;
         exercise: ExerciseProps;
     } | null>(null);
-    const [exercisePlayDialog, setExercisePlayDialog] = useState<{
+    const [exercisePlayDialog, setExercisePlayDialogState] = useState<{
         routineId: string;
         exerciseIdx: number;
         exerciseId: string;
     } | null>(null);
-    const [exerciseHistoryDialog, setExerciseHistoryDialog] = useState<{
+    const [exerciseHistoryDialog, setExerciseHistoryDialogState] = useState<{
         routineId: string;
         exerciseIdx: number;
     } | null>(null);
+
+    // Dialog open/close helpers with history
+    // Dialog open/close helpers using hash tags
+    const setExerciseDialog = (val: {
+        routineId: string;
+        exerciseIdx: number;
+        exercise: ExerciseProps;
+    } | null) => {
+        if (val) {
+            window.location.hash = '#edit';
+        } else if (window.location.hash === '#edit') {
+            window.location.hash = '';
+        }
+        setExerciseDialogState(val);
+    };
+    const setExercisePlayDialog = (val: {
+        routineId: string;
+        exerciseIdx: number;
+        exerciseId: string;
+    } | null) => {
+        if (val) {
+            window.location.hash = '#play';
+        } else if (window.location.hash === '#play') {
+            window.location.hash = '';
+        }
+        setExercisePlayDialogState(val);
+    };
+    const setExerciseHistoryDialog = (val: {
+        routineId: string;
+        exerciseIdx: number;
+    } | null) => {
+        if (val) {
+            window.location.hash = '#history';
+        } else if (window.location.hash === '#history') {
+            window.location.hash = '';
+        }
+        setExerciseHistoryDialogState(val);
+    };
+
+    // Listen for hash changes and popstate to close dialogs and menu
+    useEffect(() => {
+        const onHashOrPop = () => {
+            if (window.location.hash !== '#edit' && exerciseDialog) {
+                setExerciseDialogState(null);
+            }
+            if (window.location.hash !== '#play' && exercisePlayDialog) {
+                setExercisePlayDialogState(null);
+            }
+            if (window.location.hash !== '#history' && exerciseHistoryDialog) {
+                setExerciseHistoryDialogState(null);
+            }
+            if (window.location.hash !== '#menu' && exerciseMenuState) {
+                setExerciseMenuState(null);
+            }
+        };
+        window.addEventListener('hashchange', onHashOrPop);
+        window.addEventListener('popstate', onHashOrPop);
+        return () => {
+            window.removeEventListener('hashchange', onHashOrPop);
+            window.removeEventListener('popstate', onHashOrPop);
+        };
+    }, [exerciseDialog, exercisePlayDialog, exerciseHistoryDialog, exerciseMenuState]);
 
     const [routines, setRoutines] = useState<Routine[]>([]);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -474,7 +546,7 @@ const Routines: React.FC = () => {
                                                     const refKey = `${routine.id}-${idx}`;
                                                     if (!menuAnchorRefs[refKey]) menuAnchorRefs[refKey] = React.createRef();
                                                     const menuAnchorRef = menuAnchorRefs[refKey];
-                                                    const isMenuOpen = !!(exerciseMenu && exerciseMenu.routineId === routine.id && exerciseMenu.exerciseIdx === idx);
+                                                    const isMenuOpen = !!(exerciseMenuState && exerciseMenuState.routineId === routine.id && exerciseMenuState.exerciseIdx === idx);
                                                     // Find latest history for this exercise
                                                     const historyItems = exerciseHistory.filter(h => h.exerciseId === ex.id);
                                                     let latestHistory: ExerciseHistoryRecord | null = null;
@@ -568,7 +640,11 @@ const Routines: React.FC = () => {
                                                                 open={isMenuOpen}
                                                                 onClose={() => {
                                                                     setTimeout(() => {
-                                                                        setExerciseMenu(null)
+                                                                        if (window.location.hash === '#menu') {
+                                                                            window.history.back();
+                                                                        } else {
+                                                                            setExerciseMenu(null);
+                                                                        }
                                                                     }, 100);
                                                                 }}
                                                                 onPlay={() => {
@@ -612,7 +688,11 @@ const Routines: React.FC = () => {
                                                                         }
                                                                         return updated;
                                                                     });
-                                                                    setExerciseMenu(null);
+                                                                    if (window.location.hash === '#menu') {
+                                                                        window.history.back();
+                                                                    } else {
+                                                                        setExerciseMenu(null);
+                                                                    }
                                                                 }}
                                                                 onCopyToRoutine={targetRoutineId => {
                                                                     if (targetRoutineId === routine.id) return;
@@ -630,7 +710,11 @@ const Routines: React.FC = () => {
                                                                         });
                                                                         return updated;
                                                                     });
-                                                                    setExerciseMenu(null);
+                                                                    if (window.location.hash === '#menu') {
+                                                                        window.location.hash = '';
+                                                                    } else {
+                                                                        setExerciseMenu(null);
+                                                                    }
                                                                 }}
                                                             />
                                                         </div>
@@ -702,7 +786,11 @@ const Routines: React.FC = () => {
                         setShowAddExerciseFor(null);
                     }}
                     onClose={() => {
-                        setExerciseDialog(null);
+                        if (window.location.hash === '#edit') {
+                            window.location.hash = '';
+                        } else {
+                            setExerciseDialog(null);
+                        }
                         setShowAddExerciseFor(null);
                     }}
                 />
@@ -732,7 +820,13 @@ const Routines: React.FC = () => {
                         setExercisePlayDialog(null)
                     }}
                     onDelete={() => { }}
-                    onClose={() => setExercisePlayDialog(null)}
+                    onClose={() => {
+                        if (window.location.hash === '#play') {
+                            window.location.hash = '';
+                        } else {
+                            setExercisePlayDialog(null);
+                        }
+                    }}
                 />
             )}
 
@@ -755,7 +849,13 @@ const Routines: React.FC = () => {
                         if (!exercise) return [];
                         return exerciseHistory.filter(h => h.exerciseId === exercise.id).sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
                     })()}
-                    onClose={() => setExerciseHistoryDialog(null)}
+                    onClose={() => {
+                        if (window.location.hash === '#history') {
+                            window.location.hash = '';
+                        } else {
+                            setExerciseHistoryDialog(null);
+                        }
+                    }}
                     onDelete={async () => {
                         // Refresh exercise history after deletion
                         if (user) {
