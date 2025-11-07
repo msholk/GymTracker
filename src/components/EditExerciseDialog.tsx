@@ -64,7 +64,14 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                     <input
                         type="checkbox"
                         checked={hasRepetitions}
-                        onChange={e => setHasRepetitions(e.target.checked)}
+                        onChange={e => {
+                            const hasReps = !!e.target.checked;
+                            setHasRepetitions(hasReps);
+                            sets.forEach((set, idx) => {
+                                set.hasReps = hasReps;
+                            })
+                            setSets([...sets]);
+                        }}
                         style={{ marginRight: 8 }}
                     />
                     Has Repetitions
@@ -127,6 +134,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
                     style={{ maxWidth: 200, fontSize: 15, padding: '7px 10px', borderRadius: 8, border: '1px solid #ccc', width: '100%' }}
                 >
                     <option value="Unit">Unit</option>
+                    <option value="Level">Level</option>
                     <option value="Kg">Kg</option>
                     <option value="Lb">Lb</option>
                     <option value="Plate">Plate</option>

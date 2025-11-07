@@ -18,10 +18,10 @@ export function formatSetsShort(ex: ExerciseProps | ExerciseHistoryRecord | null
         if ('hasReps' in set ? set.hasReps && set.reps : set.reps) {
             desc += ` x${set.reps}`;
         }
-        return desc.trim();
+        return desc.trim().replace(/Level/, ' Lvl');
     };
     // Check if all setDesc results are the same
-    const firstDesc = setDesc(sets[0]);
+    const firstDesc = setDesc(sets[0]); // Shorten 'Level' to 'Lv'
     if (sets.length === 1) {
         return firstDesc;
     }
