@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { ExerciseHistoryRecord } from '../data/exerciseHistory';
-import { deleteExerciseHistory } from '../data/exerciseHistory';
 
 interface ExerciseHistoryDialogProps {
     open: boolean;
     exerciseTitle: string;
     history: ExerciseHistoryRecord[];
     onClose: () => void;
-    onDelete?: () => void;
+    onDelete?: (h: ExerciseHistoryRecord & { docId?: string }) => void;
 }
 
 import { formatSetsShort } from '../utils/formatSetsShort';
-import { ExerciseProps } from '../types/exercise';
 
 const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exerciseTitle, history, onClose, onDelete }) => {
     const [deleting, setDeleting] = useState<string | null>(null);
@@ -28,9 +26,8 @@ const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exe
         }
         setDeleting(docId);
         try {
-            await deleteExerciseHistory(docId);
             // Optionally, trigger a refresh or callback to parent to update history
-            onDelete && onDelete();
+            onDelete && onDelete(h);
         } catch (e) {
             alert('Failed to delete history entry.');
         } finally {

@@ -1,5 +1,5 @@
 // ...existing code...
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, act } from 'react';
 import '../styles.css';
 import type { ExerciseProps } from '../types/exercise';
 import { formatSetsShort } from '../utils/formatSetsShort';
@@ -13,7 +13,7 @@ import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
 
-import { getExerciseHistory, ExerciseHistoryRecord, saveExerciseHistory } from '../data/exerciseHistory';
+import { getExerciseHistory, ExerciseHistoryRecord } from '../data/exerciseHistory';
 import { HistoryCache } from '../lib/HistoryCache';
 
 
@@ -31,6 +31,18 @@ export interface Routine {
 let historyCache: HistoryCache | null = null;
 const Routines: React.FC = () => {
     const { user } = useAuth();
+    // Sync pending history queue when back online
+    useEffect(() => {
+        const sync = async () => {
+            if (historyCache && navigator.onLine) {
+                await historyCache.syncQueue();
+            }
+        };
+        window.addEventListener('online', sync);
+        // Optionally, try once on mount
+        sync();
+        return () => window.removeEventListener('online', sync);
+    }, [user]);
     // State for exercise history
     const [exerciseHistory, setExerciseHistory] = useState<ExerciseHistoryRecord[]>([]);
     const [exerciseMenuState, setExerciseMenuState] = useState<{ routineId: string, exerciseIdx: number } | null>(null);
@@ -749,7 +761,7 @@ const Routines: React.FC = () => {
                         if (historyItems.length === 0) return null;
                         return historyItems.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
                     })()}
-                    onSave={async historyRecord => {
+                    onSave={async (historyRecord: ExerciseHistoryRecord) => {
                         if (!exercisePlayDialog) return;
                         historyCache?.addRecord(historyRecord)
                         setExercisePlayDialog(null)
@@ -791,11 +803,11 @@ const Routines: React.FC = () => {
                             setExerciseHistoryDialog(null);
                         }
                     }}
-                    onDelete={async () => {
+                    onDelete={async (historyRecord: ExerciseHistoryRecord & { docId?: string }) => {
                         // Refresh exercise history after deletion
                         if (user) {
-                            const newHistory = await getExerciseHistory(user.uid);
-                            setExerciseHistory(newHistory);
+                            historyCache?.deleteRecord(historyRecord)
+
                         }
                     }}
                 />

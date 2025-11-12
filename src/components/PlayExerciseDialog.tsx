@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { ExerciseHistoryRecord, saveExerciseHistory } from '../data/exerciseHistory';
+import { ExerciseHistoryRecord } from '../data/exerciseHistory';
 
-import type { SetItem, MeasurementUnit, ExerciseProps } from '../types/exercise';
+import type { SetItem, ExerciseProps } from '../types/exercise';
 import { renderSetInputs } from './SetInputs/renderSetInputs';
 import { LatestHistory } from './LatestHistory';
 interface PlaySetItem extends SetItem {
@@ -13,7 +13,7 @@ interface PlayExerciseDialogProps {
     open: boolean;
     exercise?: ExerciseProps | null | undefined;
     latestHistory?: ExerciseHistoryRecord | null | undefined;
-    onSave: (updated: { id: string; title: string; measurement?: 'Time' | 'Weight' | 'Body Weight'; sets?: PlaySetItem[]; measurementUnit?: MeasurementUnit }) => void;
+    onSave: (historyRecord: ExerciseHistoryRecord) => void;
     onDelete: () => void;
     onClose: () => void;
 }
@@ -99,16 +99,16 @@ const PlayExerciseDialog: React.FC<PlayExerciseDialogProps> = (
                                 hasWeight: !!exercise.hasWeight,
                                 hasTime: !!exercise.hasTime,
                             }));
-                            const historyData: ExerciseHistoryRecord = {
+                            const historyRecord: ExerciseHistoryRecord = {
                                 exerciseId: exercise.id,
                                 title,
                                 measurementUnit,
                                 sets: sanitizedSets,
-                                timestamp: Date.now(),
+                                timestamp: new Date().toISOString(),
                                 difficulty,
                             };
-                            await saveExerciseHistory(historyData);
-                            onSave({ id: exercise.id, title, sets: sanitizedSets, measurementUnit });
+
+                            onSave(historyRecord);
                             setIsSaving(false);
                             onClose();
                         }}
