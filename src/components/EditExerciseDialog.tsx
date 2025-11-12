@@ -190,7 +190,7 @@ const EditExerciseDialog: React.FC<EditExerciseDialogProps> = ({ open, exercise,
         const addRepsToEachSet = () => {
             const _sets = _.cloneDeep(sets);
             const _reps = (_.first(_sets)?.reps || 0) + 1;
-            _.forEach(_sets, (_set) => {
+            _.forEach(_sets, (_set: SetItem) => {
                 _set.reps = _reps;
             });
             setSets(_sets);

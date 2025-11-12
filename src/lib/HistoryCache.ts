@@ -8,6 +8,7 @@ export class HistoryCache {
     private setToUI: (data: ExerciseHistoryRecord[]) => void;
     private _syncing: boolean = false;
     private _intervalId: number | null = null;
+    private _shouldFetchAfterSync: boolean = false;
 
     constructor(uid: string, expiryMs: number = 1000 * 60 * 10, setExerciseHistory: (data: ExerciseHistoryRecord[]) => void) {
         this.key = 'exerciseHistory_' + uid;
@@ -49,45 +50,49 @@ export class HistoryCache {
         if (this._syncing) return;
         this._syncing = true;
         let queue = this.getQueue();
-        if (!queue.length) {
-            return;
-        }
-        const maxRetries = 7;
-        const baseDelay = 1000; // 1 second
-        while (queue.length) {
-            const qRecord = queue[0];
-            let attempt = 3;
-            let success = false;
-            while (attempt < maxRetries && !success) {
-                try {
-                    if (qRecord.action === 'add') {
-                        console.log('HistoryCache: syncing(adding) record to server', qRecord.record);
-                        await saveExerciseHistory(qRecord.record);
-                    }
-                    else if (qRecord.action === 'delete') {
-                        await deleteExerciseHistory("" + qRecord.record.docId);
-                    }
-                    success = true;
-                } catch (e) {
-                    attempt++;
-                    if (attempt < maxRetries) {
-                        // Exponential backoff
-                        const delay = baseDelay * Math.pow(2, attempt - 1);
-                        await new Promise(res => setTimeout(res, delay));
+        if (queue.length) {
+
+            const maxRetries = 7;
+            const baseDelay = 1000; // 1 second
+            while (queue.length) {
+                const qRecord = queue[0];
+                let attempt = 3;
+                let success = false;
+                while (attempt < maxRetries && !success) {
+                    try {
+                        if (qRecord.action === 'add') {
+                            console.log('HistoryCache: syncing(adding) record to server', qRecord.record);
+                            await saveExerciseHistory(qRecord.record);
+                        }
+                        else if (qRecord.action === 'delete') {
+                            await deleteExerciseHistory("" + qRecord.record.docId);
+                        }
+                        success = true;
+                    } catch (e) {
+                        attempt++;
+                        if (attempt < maxRetries) {
+                            // Exponential backoff
+                            const delay = baseDelay * Math.pow(2, attempt - 1);
+                            await new Promise(res => setTimeout(res, delay));
+                        }
                     }
                 }
+                if (success) {
+                    // Re-read the queue and filter out the record by docId (PK)
+                    const latestQueue = this.getQueue();
+                    queue = latestQueue.filter(q => q.record.docId !== qRecord.record.docId);
+                    this.setQueue(queue);
+                }
+                else {
+                    break; // Exit if unable to sync after max retries
+                }
             }
-            if (success) {
-                // Re-read the queue and filter out the record by docId (PK)
-                const latestQueue = this.getQueue();
-                queue = latestQueue.filter(q => q.record.docId !== qRecord.record.docId);
-                this.setQueue(queue);
-            }
-            else {
-                break; // Exit if unable to sync after max retries
-            }
+            this._syncing = false;
         }
-        this._syncing = false;
+        if (this._shouldFetchAfterSync && queue.length === 0) {
+            this._shouldFetchAfterSync = false;
+            this.getFromDb();
+        }
     }
 
     private getQueueKey() {
@@ -162,11 +167,12 @@ export class HistoryCache {
                     console.log('HistoryCache: fetched from DB');
                     this.setToCacheAndUI(hst);
                 });
-        }, 5000);
+        }, 100);
     }
 
-    async retrieve() {
+    async retrieveOnLoad() {
         this.setToUIFromCache();
-        this.getFromDb();
+        this._shouldFetchAfterSync = true;
+        this.syncQueue();
     }
 }

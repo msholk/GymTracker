@@ -13,7 +13,7 @@ import { db } from '../firebase/config';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
 
-import { getExerciseHistory, ExerciseHistoryRecord } from '../data/exerciseHistory';
+import { ExerciseHistoryRecord } from '../data/exerciseHistory';
 import { HistoryCache } from '../lib/HistoryCache';
 
 
@@ -38,6 +38,10 @@ const Routines: React.FC = () => {
                 await historyCache.syncQueue();
             }
         };
+        if (!user) return;
+        historyCache = new HistoryCache(user.uid, 1000 * 60 * 60 * 2, setExerciseHistory);
+        historyCache.retrieveOnLoad();
+
         window.addEventListener('online', sync);
         // Optionally, try once on mount
         sync();
@@ -59,11 +63,7 @@ const Routines: React.FC = () => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    useEffect(() => {
-        if (!user) return;
-        historyCache = new HistoryCache(user.uid, 1000 * 60 * 60 * 2, setExerciseHistory);
-        historyCache.retrieve();
-    }, [user]);
+
 
 
     // Routine selection and editing
