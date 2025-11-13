@@ -94,8 +94,9 @@ export class RoutinesCache {
                             await deleteDoc(doc(db, 'routines', qRecord.record.id));
                         }
                         else if (qRecord.action === 'update') {
-                            const { id, ...dataToUpdate } = qRecord.record;
-                            await updateDoc(doc(db, 'routines', id), dataToUpdate);
+                            const { id } = qRecord.record;
+                            const routineDoc = doc(db, 'routines', id)
+                            await updateDoc(routineDoc, { ...qRecord.record });
                         }
                         success = true;
 
@@ -277,8 +278,9 @@ export class RoutinesCache {
                     } else {
                         createdAt = new Date().toISOString();
                     }
+                    let docId = docSnap.id;
                     return {
-                        id: docSnap.id,
+                        id: docId,
                         title: data.title,
                         createdAt,
                         isEditing: false,
