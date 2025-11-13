@@ -1,1 +1,33 @@
-if(!self.define){let e,s={};const n=(n,i)=>(n=new URL(n+".js",i).href,s[n]||new Promise(s=>{if("document"in self){const e=document.createElement("script");e.src=n,e.onload=s,document.head.appendChild(e)}else e=n,importScripts(n),s()}).then(()=>{let e=s[n];if(!e)throw new Error(`Module ${n} didn’t register its module`);return e}));self.define=(i,t)=>{const r=e||("document"in self?document.currentScript.src:"")||location.href;if(s[r])return;let c={};const o=e=>n(e,r),l={module:{uri:r},exports:c,require:o};s[r]=Promise.all(i.map(e=>l[e]||o(e))).then(e=>(t(...e),c))}}define(["./workbox-1ea6f077"],function(e){"use strict";self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"assets/index-BNxdTFcm.js",revision:null},{url:"assets/index-BvoFgScV.css",revision:null},{url:"index.html",revision:"7fda8767c85b1cab022385047d9f9ce0"},{url:"registerSW.js",revision:"1872c500de691dce40960bb85481de07"},{url:"manifest.webmanifest",revision:"414c4375b052c9abc25318990c7bc950"}],{}),e.cleanupOutdatedCaches(),e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html"))),e.registerRoute(/^https:\/\/.*/,new e.NetworkFirst({cacheName:"external-cache",plugins:[new e.ExpirationPlugin({maxEntries:50,maxAgeSeconds:2592e3})]}),"GET")});
+// sw.js - Example readable service worker
+
+self.addEventListener('install', event => {
+    self.skipWaiting();
+    console.log('[SW] Installed');
+});
+
+self.addEventListener('activate', event => {
+    self.clients.claim();
+    console.log('[SW] Activated');
+});
+
+self.addEventListener('fetch', event => {
+    // Example: Network-first strategy for all requests
+    event.respondWith(
+        fetch(event.request)
+            .then(response => {
+                // Optionally, cache the response here
+                return response;
+            })
+            .catch(() => {
+                // Optionally, return from cache if offline
+                return caches.match(event.request);
+            })
+    );
+});
+
+// Listen for skipWaiting message from app
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});

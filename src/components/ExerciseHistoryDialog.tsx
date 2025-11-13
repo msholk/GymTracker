@@ -65,18 +65,24 @@ const ExerciseHistoryDialog: React.FC<ExerciseHistoryDialogProps> = ({ open, exe
                             <li key={date} style={{ marginBottom: 18 }}>
                                 <div style={{ color: '#4F8A8B', fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{date}</div>
                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                                    {grouped[date].map((h, i) => (
-                                        <li key={h.timestamp + '-' + i} style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ color: '#333', fontSize: 14 }}>
-                                                {formatSetsShort(h)}  Difficulty: {h.difficulty}
-                                            </div>
-                                            <button
-                                                style={{ marginLeft: 12, background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 13, cursor: 'pointer', opacity: deleting === getDocId(h) ? 0.6 : 1 }}
-                                                disabled={deleting === getDocId(h)}
-                                                onClick={() => handleDelete(h)}
-                                            >{deleting === getDocId(h) ? 'Deleting...' : '-'}</button>
-                                        </li>
-                                    ))}
+                                    {grouped[date].map((h, i) => {
+                                        let histRecord = h
+                                        return (
+                                            <li key={h.timestamp + '-' + i} style={{ marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ color: '#333', fontSize: 14 }}>
+                                                    {formatSetsShort(h)}  Difficulty: {h.difficulty}
+                                                </div>
+                                                <button
+                                                    style={{ marginLeft: 12, background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 13, cursor: 'pointer', opacity: deleting === getDocId(h) ? 0.6 : 1 }}
+                                                    disabled={deleting === getDocId(h)}
+                                                    onClick={() => {
+                                                        debugger
+                                                        handleDelete(histRecord);
+                                                    }}
+                                                >{deleting === histRecord.docId ? 'Deleting...' : '-'}</button>
+                                            </li>
+                                        )
+                                    })}
                                 </ul>
                             </li>
                         ))}

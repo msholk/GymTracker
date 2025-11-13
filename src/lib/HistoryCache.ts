@@ -1,5 +1,6 @@
-import { ExerciseHistoryRecord, saveExerciseHistory, deleteExerciseHistory } from '../data/exerciseHistory';
+import { ExerciseHistoryRecord, deleteExerciseHistory } from '../data/exerciseHistory';
 import { collection, getDocs, addDoc, query, where, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { uuidv4 } from './utils';
 import { db } from '../firebase/config';
 // Utility class for caching exercise history in localStorage with expiry
 export class HistoryCache {
@@ -34,6 +35,7 @@ export class HistoryCache {
 
     addRecord(historyRecord: ExerciseHistoryRecord) {
         const history = this.getFromCache();
+        historyRecord.docId = historyRecord.docId || uuidv4()
         history.push(historyRecord);
         this.setToCacheAndUI(history);
         this.addToQueue(historyRecord);
@@ -63,7 +65,12 @@ export class HistoryCache {
                     try {
                         if (qRecord.action === 'add') {
                             console.log('HistoryCache: syncing(adding) record to server', qRecord.record);
-                            await saveExerciseHistory(qRecord.record);
+                            const docData = {
+                                ...qRecord.record,
+                                uid: this.uid,
+                                timestamp: new Date().toISOString(), // Store as ISO string
+                            };
+                            await addDoc(collection(db, 'exercise_history'), docData);
                         }
                         else if (qRecord.action === 'delete') {
                             await deleteExerciseHistory("" + qRecord.record.docId);
@@ -174,9 +181,10 @@ export class HistoryCache {
 
             const historyFromDb = snapshot.docs.map(doc => {
                 const data = doc.data();
+                const docId = doc.id;
                 return {
                     ...data,
-                    docId: doc.id,
+                    docId: docId,
                     timestamp: typeof data.timestamp === 'string' ? Date.parse(data.timestamp) : (data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now()),
                 } as ExerciseHistoryRecord;
             });

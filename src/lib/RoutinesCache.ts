@@ -1,5 +1,6 @@
 import { Routine } from '@/components/Routines';
 import { ExerciseHistoryRecord, } from '../data/exerciseHistory';
+import { uuidv4 } from './utils';
 import { collection, getDocs, addDoc, query, where, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -36,13 +37,6 @@ export class RoutinesCache {
     }
 
     addNewRoutine() {
-        // Generate a simple unique ID (UUID v4 style)
-        function uuidv4() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
         const newRoutine: Routine = {
             id: uuidv4(),
             isEditing: false,
