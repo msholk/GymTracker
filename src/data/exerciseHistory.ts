@@ -25,21 +25,5 @@ export interface ExerciseHistoryRecord {
 }
 
 
-export async function saveExerciseHistory(record: ExerciseHistoryRecord) {
-    const user = auth.currentUser;
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
-    const docData = {
-        ...record,
-        uid: user.uid,
-        timestamp: new Date().toISOString(), // Store as ISO string
-    };
-    console.log('Saving exercise history:', JSON.stringify(docData, null, 2));
-    setTimeout(async () => {
-        await addDoc(collection(db, 'exercise_history'), docData);
-        console.log('Exercise history saved successfully');
-    }, 3000); // Simulate delay
-}
 
 

@@ -1,7 +1,7 @@
 import { Routine } from '@/components/Routines';
 import { ExerciseHistoryRecord, } from '../data/exerciseHistory';
 import { uuidv4 } from './utils';
-import { collection, getDocs, addDoc, query, where, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, serverTimestamp, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 // Utility class for caching exercise history in localStorage with expiry
@@ -34,6 +34,31 @@ export class RoutinesCache {
                 clearInterval(this._intervalId);
             }
         });
+    }
+
+    duplicateRoutine(id: string) {
+        const routines = this.getFromCache();
+        const routineToDuplicate = routines.find((r: Routine) => r.id === id);
+        if (!routineToDuplicate) return;
+        const newRoutine: Routine = {
+            title: routineToDuplicate.title + ' (Copy)',
+            createdAt: new Date().toISOString(),
+            uid: routineToDuplicate.uid,
+            id: uuidv4(),
+            isEditing: undefined,
+            exercises: routineToDuplicate.exercises ? routineToDuplicate.exercises.map((ex: any) => ({
+                ...ex,
+                id: Math.random().toString(36).substr(2, 9), // new id for each exercise
+                sets: ex.sets ? ex.sets.map((set: any) => ({
+                    ...set,
+                    id: Math.random().toString(36).substr(2, 9) // new id for each set
+                })) : undefined
+            })) : []
+        };
+        routines.push(newRoutine);
+        this.setToCacheAndUI(routines);
+        this.addToQueue(newRoutine);
+        this.syncQueue();
     }
 
     addNewRoutine() {
@@ -87,15 +112,17 @@ export class RoutinesCache {
                 while (attempt < maxRetries && !success) {
                     try {
                         if (qRecord.action === 'add') {
-                            console.log('RoutineCache: syncing(adding) record to server', qRecord.record);
-                            await addDoc(collection(db, 'routines'), qRecord.record);
+                            console.log('RoutineCache: syncing(adding) record ', qRecord.record);
+                            await setDoc(doc(db, 'routines', qRecord.record.id), qRecord.record);
                         }
                         else if (qRecord.action === 'delete') {
+                            console.log('RoutineCache: syncing(deleting) record ', qRecord.record);
                             await deleteDoc(doc(db, 'routines', qRecord.record.id));
                         }
                         else if (qRecord.action === 'update') {
                             const { id } = qRecord.record;
                             const routineDoc = doc(db, 'routines', id)
+                            console.log('RoutineCache: syncing(updating) record ', qRecord.record);
                             await updateDoc(routineDoc, { ...qRecord.record });
                         }
                         success = true;

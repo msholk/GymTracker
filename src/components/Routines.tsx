@@ -21,7 +21,7 @@ export interface Routine {
     id: string;
     title: string;
     createdAt: string;
-    isEditing: boolean;
+    isEditing: boolean | null | undefined;
     uid: string;
     exercises?: ExerciseProps[];
 }
@@ -265,7 +265,7 @@ const Routines: React.FC = () => {
                         >Save</button>
                         <button
                             style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                            onClick={e => { e.stopPropagation(); /*duplicateRoutine(routine.id);*/ }}
+                            onClick={e => { e.stopPropagation(); routinesCache?.duplicateRoutine(routine.id); }}
                         >Duplicate</button>
                         <button
                             style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
