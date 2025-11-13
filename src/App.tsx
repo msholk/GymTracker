@@ -27,6 +27,9 @@ const App: React.FC = () => {
         ) : (
           <Auth />
         )}
+        <div style={{ position: 'fixed', bottom: 4, right: 8, fontSize: '0.7em', color: '#888', opacity: 0.7, zIndex: 9999 }}>
+          v1.1.0
+        </div>
       </div>
     </Router>
   );

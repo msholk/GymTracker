@@ -9,19 +9,18 @@ import ExerciseMenu from './ExerciseMenu';
 import EditExerciseDialog from './EditExerciseDialog';
 import PlayExerciseDialog from './PlayExerciseDialog';
 import ExerciseHistoryDialog from './ExerciseHistoryDialog';
-import { db } from '../firebase/config';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import useAuth from '../hooks/useAuth';
 
 import { ExerciseHistoryRecord } from '../data/exerciseHistory';
 import { HistoryCache } from '../lib/HistoryCache';
+import { RoutinesCache } from '../lib/RoutinesCache';
 
 
 
 export interface Routine {
     id: string;
     title: string;
-    createdAt: Date;
+    createdAt: string;
     isEditing: boolean;
     uid: string;
     exercises?: ExerciseProps[];
@@ -29,6 +28,7 @@ export interface Routine {
 
 
 let historyCache: HistoryCache | null = null;
+let routinesCache: RoutinesCache | null = null;
 const Routines: React.FC = () => {
     const { user } = useAuth();
     // Sync pending history queue when back online
@@ -45,6 +45,23 @@ const Routines: React.FC = () => {
         window.addEventListener('online', sync);
         // Optionally, try once on mount
         sync();
+        return () => window.removeEventListener('online', sync);
+    }, [user]);
+    useEffect(() => {
+        setLoading(true);
+        const sync = async () => {
+            if (routinesCache && navigator.onLine) {
+                await routinesCache.syncQueue();
+            }
+        };
+        if (!user) return;
+        routinesCache = new RoutinesCache(user.uid, 1000 * 60 * 60 * 2, setRoutines);
+        routinesCache.retrieveOnLoad();
+
+        window.addEventListener('online', sync);
+        // Optionally, try once on mount
+        sync();
+        setLoading(false);
         return () => window.removeEventListener('online', sync);
     }, [user]);
     // State for exercise history
@@ -158,56 +175,12 @@ const Routines: React.FC = () => {
     };
 
     const updateRoutineTitle = async (id: string, title: string) => {
-        await updateDoc(doc(db, 'routines', id), { title });
-        setRoutines(routines => routines.map(r => r.id === id ? { ...r, title } : r));
+        routinesCache?.updateRoutine(id, { title });
     };
 
-    useEffect(() => {
-        if (!user) return;
-        const fetchRoutines = async () => {
-            setLoading(true);
-            const q = query(
-                collection(db, 'routines'),
-                where('uid', '==', user.uid),
-                orderBy('createdAt', 'desc')
-            );
-            const snapshot = await getDocs(q);
-            setRoutines(snapshot.docs.map(docSnap => {
-                const data = docSnap.data();
-                return {
-                    id: docSnap.id,
-                    title: data.title,
-                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-                    isEditing: false,
-                    uid: data.uid,
-                    exercises: data.exercises || []
-                };
-            }));
-            setLoading(false);
-        };
-        fetchRoutines();
-    }, [user]);
 
-    const addRoutine = async () => {
-        if (!user) return;
-        const docRef = await addDoc(collection(db, 'routines'), {
-            title: '',
-            createdAt: serverTimestamp(),
-            uid: user.uid,
-            exercises: []
-        });
-        setRoutines(routines => [
-            {
-                id: docRef.id,
-                title: '',
-                createdAt: new Date(),
-                isEditing: true,
-                uid: user.uid,
-                exercises: []
-            },
-            ...routines
-        ]);
-    };
+
+
 
 
 
@@ -228,52 +201,20 @@ const Routines: React.FC = () => {
 
 
     const deleteRoutine = async (id: string) => {
-        await deleteDoc(doc(db, 'routines', id));
-        setRoutines(routines => routines.filter(r => r.id !== id));
+        routinesCache?.deleteRoutine(id);
         setConfirmDeleteId(null);
         setEditingId(null);
         setEditTitle('');
         setSelectedId(null);
     };
 
-    const duplicateRoutine = async (id: string) => {
-        const routine = routines.find(r => r.id === id);
-        if (!routine) return;
-        setEditingId(null);
 
-        const newRoutine = {
-            title: routine.title + ' (Copy)',
-            createdAt: serverTimestamp(),
-            uid: routine.uid,
-            exercises: routine.exercises ? routine.exercises.map(ex => ({
-                ...ex,
-                id: Math.random().toString(36).substr(2, 9), // new id for each exercise
-                sets: ex.sets ? ex.sets.map(set => ({
-                    ...set,
-                    id: Math.random().toString(36).substr(2, 9) // new id for each set
-                })) : undefined
-            })) : []
-        };
-        const docRef = await addDoc(collection(db, 'routines'), newRoutine);
-        setRoutines(routines => [
-            {
-                ...newRoutine,
-                id: docRef.id,
-                createdAt: new Date(),
-                isEditing: true
-            },
-            ...routines
-        ]);
-        setEditingId(docRef.id);
-        setEditTitle(newRoutine.title);
-        setSelectedId(docRef.id);
-    }
 
     const Routinesheader = (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <h2 style={{ color: '#4F8A8B', fontWeight: 700, margin: 0 }}>Routines</h2>
             <button
-                onClick={addRoutine}
+                onClick={() => { routinesCache?.addNewRoutine(); }}
                 style={{
                     background: '#4F8A8B',
                     color: '#fff',
@@ -324,7 +265,7 @@ const Routines: React.FC = () => {
                         >Save</button>
                         <button
                             style={{ background: '#4F8A8B', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                            onClick={e => { e.stopPropagation(); duplicateRoutine(routine.id); }}
+                            onClick={e => { e.stopPropagation(); /*duplicateRoutine(routine.id);*/ }}
                         >Duplicate</button>
                         <button
                             style={{ background: '#d32f2f', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
@@ -519,7 +460,7 @@ const Routines: React.FC = () => {
                                                                 setRoutines(routines => routines.map(r =>
                                                                     r.id === routine.id ? { ...r, exercises: updatedExercises } : r
                                                                 ));
-                                                                updateDoc(doc(db, 'routines', routine.id), { exercises: updatedExercises });
+                                                                routinesCache?.updateRoutine(routine.id, { exercises: updatedExercises });
                                                             }}
                                                         >
                                                             <span style={{ flex: 1 }}>
@@ -620,7 +561,7 @@ const Routines: React.FC = () => {
                                                                         const updated = prevRoutines.map(r => {
                                                                             if (r.id === routine.id) {
                                                                                 const newExercises = (r.exercises || []).filter((_, i) => i !== idx);
-                                                                                updateDoc(doc(db, 'routines', r.id), { exercises: newExercises });
+                                                                                routinesCache?.updateRoutine(r.id, { exercises: newExercises });
                                                                                 return { ...r, exercises: newExercises };
                                                                             }
                                                                             return r;
@@ -630,7 +571,8 @@ const Routines: React.FC = () => {
                                                                         if (targetIdx !== -1) {
                                                                             const targetRoutine = updated[targetIdx];
                                                                             const newExercises = targetRoutine.exercises ? [...targetRoutine.exercises, exerciseToMove] : [exerciseToMove];
-                                                                            updateDoc(doc(db, 'routines', targetRoutineId), { exercises: newExercises });
+                                                                            routinesCache?.updateRoutine(targetRoutineId, { exercises: newExercises });
+
                                                                             updated[targetIdx] = { ...targetRoutine, exercises: newExercises };
                                                                         }
                                                                         return updated;
@@ -650,7 +592,8 @@ const Routines: React.FC = () => {
                                                                         const updated = prevRoutines.map(r => {
                                                                             if (r.id === targetRoutineId) {
                                                                                 const newExercises = r.exercises ? [...r.exercises, exerciseCopy] : [exerciseCopy];
-                                                                                updateDoc(doc(db, 'routines', r.id), { exercises: newExercises });
+                                                                                routinesCache?.updateRoutine(r.id, { exercises: newExercises });
+
                                                                                 return { ...r, exercises: newExercises };
                                                                             }
                                                                             return r;
@@ -704,7 +647,8 @@ const Routines: React.FC = () => {
                             const newExercises = exercises.map((ex, i) =>
                                 i === exerciseDialog.exerciseIdx ? { ...ex, ...updated } : ex
                             );
-                            updateDoc(doc(db, 'routines', r.id), { exercises: newExercises });
+                            routinesCache?.updateRoutine(r.id, { exercises: newExercises });
+
                             return { ...r, exercises: newExercises };
                         });
                         console.log('Updated routines after exercise edit:', JSON.stringify(_routines, null, 2));
@@ -715,7 +659,7 @@ const Routines: React.FC = () => {
                         const _routines = routines.map(r => {
                             if (r.id !== showAddExerciseFor?.routineId) return r;
                             const exercises = r.exercises ? [...r.exercises, newExercise] : [newExercise];
-                            updateDoc(doc(db, 'routines', r.id), { exercises });
+                            routinesCache?.updateRoutine(r.id, { exercises });
                             return { ...r, exercises };
                         })
                         setRoutines(() => _routines as Routine[]);
@@ -726,7 +670,7 @@ const Routines: React.FC = () => {
                         setRoutines(routines => routines.map(r => {
                             if (r.id !== exerciseDialog.routineId) return r;
                             const exercises = (r.exercises || []).filter((_, i) => i !== exerciseDialog.exerciseIdx);
-                            updateDoc(doc(db, 'routines', r.id), { exercises });
+                            routinesCache?.updateRoutine(r.id, { exercises });
                             return { ...r, exercises };
                         }));
                         setExerciseDialog(null);

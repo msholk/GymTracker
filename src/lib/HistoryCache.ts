@@ -1,5 +1,6 @@
-import { ExerciseHistoryRecord, saveExerciseHistory, getExerciseHistory, deleteExerciseHistory } from '../data/exerciseHistory';
-
+import { ExerciseHistoryRecord, saveExerciseHistory, deleteExerciseHistory } from '../data/exerciseHistory';
+import { collection, getDocs, addDoc, query, where, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 // Utility class for caching exercise history in localStorage with expiry
 export class HistoryCache {
     private key: string;
@@ -160,13 +161,26 @@ export class HistoryCache {
     }
 
     async getFromDb() {
-        console.log('HistoryCache: fetching from DB');
-        setTimeout(() => {
-            getExerciseHistory(this.uid)
-                .then(hst => {
-                    console.log('HistoryCache: fetched from DB');
-                    this.setToCacheAndUI(hst);
-                });
+        console.log('%c History: fetching from DB 🛢️', 'color: #032423ff; font-style: italic');
+        setTimeout(async () => {
+
+            const q = query(collection(db, 'exercise_history'), where('uid', '==', this.uid));
+            const snapshot = await getDocs(q);
+            if (snapshot.metadata.fromCache && snapshot.docs.length === 0) {
+                console.warn('%c History: offline or no data in cache, skipping processing', 'color: orange; font-weight: bold');
+                return;
+            }
+            console.log(`%c History: fetched from DB 🛢️${snapshot.docs.length}`, 'color: #0b983eff; font-weight: bold');
+
+            const historyFromDb = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    docId: doc.id,
+                    timestamp: typeof data.timestamp === 'string' ? Date.parse(data.timestamp) : (data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now()),
+                } as ExerciseHistoryRecord;
+            });
+            this.setToCacheAndUI(historyFromDb);
         }, 100);
     }
 

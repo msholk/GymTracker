@@ -42,17 +42,4 @@ export async function saveExerciseHistory(record: ExerciseHistoryRecord) {
     }, 3000); // Simulate delay
 }
 
-export async function getExerciseHistory(uid: string): Promise<ExerciseHistoryRecord[]> {
-    // Fetch all exercise history for a user
-    const q = query(collection(db, 'exercise_history'), where('uid', '==', uid));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            ...data,
-            docId: doc.id,
-            timestamp: typeof data.timestamp === 'string' ? Date.parse(data.timestamp) : (data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now()),
-        } as ExerciseHistoryRecord;
-    });
-}
 
